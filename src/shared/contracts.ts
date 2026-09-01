@@ -12,16 +12,20 @@ export const submitDocumentSchema = z.object({
   callbackUrl: z.url(),
 });
 
-export const webhookPayloadSchema = z.object({
+export const webhookDataSchema = z.object({
   documentId: z.uuid(),
   status: z.enum(["approved", "rejected"]),
   reason: z.string().min(1).optional(),
   timestamp: z.iso.datetime(),
-  signature: z.string().optional(),
+});
+
+export const webhookPayloadSchema = webhookDataSchema.extend({
+  signature: z.string().regex(/^[a-f\d]{64}$/i),
 });
 
 export type SubmitDocumentInput = z.infer<typeof submitDocumentSchema>;
 export type CreateDocumentInput = z.infer<typeof createDocumentSchema>;
+export type WebhookData = z.infer<typeof webhookDataSchema>;
 export type WebhookPayload = z.infer<typeof webhookPayloadSchema>;
 
 export function parseWebhookPayload(input: unknown): WebhookPayload {

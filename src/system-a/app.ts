@@ -5,12 +5,14 @@ import { errorHandler, notFoundHandler } from "../shared/http.js";
 import type { DocumentRepository } from "./document-repository.js";
 import { DrizzleDocumentRepository } from "./drizzle-document-repository.js";
 import { createDocumentsRouter } from "./routes/documents.js";
+import { createWebhooksRouter } from "./routes/webhooks.js";
 import { FetchSystemBClient, type SystemBClient } from "./system-b-client.js";
 
 interface SystemADependencies {
   repository?: DocumentRepository;
   systemBClient?: SystemBClient;
   callbackUrl?: string;
+  hmacSecret?: string;
 }
 
 export function createSystemAApp(dependencies: SystemADependencies = {}) {
@@ -34,6 +36,13 @@ export function createSystemAApp(dependencies: SystemADependencies = {}) {
       systemBClient,
       callbackUrl:
         dependencies.callbackUrl ?? `${env.SYSTEM_A_URL}/webhooks/absign`,
+    }),
+  );
+  app.use(
+    "/webhooks",
+    createWebhooksRouter({
+      repository,
+      hmacSecret: dependencies.hmacSecret ?? env.HMAC_SECRET,
     }),
   );
 

@@ -66,6 +66,27 @@ avance.
 **Resultado:** La etapa 2 queda completa y cubierta por pruebas de envío exitoso,
 fallo, reintentos y errores permanentes.
 
+### 2026-09-01 — Webhook seguro e idempotente en Sistema A
+
+- Se implementó `POST /webhooks/absign` para recibir decisiones de aprobación o
+  rechazo.
+- Sistema B y Sistema A comparten un contrato de firma HMAC-SHA256 basado en un
+  secreto configurado mediante `HMAC_SECRET`.
+- La firma recibida en `X-Signature` se compara en tiempo constante y también debe
+  coincidir con la firma incluida en el payload.
+- Los webhooks con firma inválida se rechazan con `401` y generan una incidencia
+  sin modificar el documento.
+- El procesamiento en PostgreSQL se ejecuta dentro de una transacción: primero se
+  registra el evento de auditoría y después se actualiza el documento.
+- La restricción única `documentId + status` y `ON CONFLICT DO NOTHING` impiden
+  efectos duplicados aunque el mismo webhook llegue varias veces.
+- Se añadieron los tests obligatorios de flujo aprobado, firma inválida e
+  idempotencia.
+
+**Resultado:** La etapa 3 queda completa con 12 pruebas aprobadas. Los reintentos
+de entrega del webhook y la reconciliación pertenecen a la etapa 4 y siguen
+pendientes.
+
 ### Convención de la bitácora
 
 Cada avance funcional incluirá la fecha, las decisiones tomadas, las pruebas
