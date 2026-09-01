@@ -12,5 +12,5 @@
     "outDir": "dist",
     "types": ["node", "vitest/globals"]
   },
-  "include": ["src", "tests", "drizzle.config.ts", "vitest.config.ts"]
+  "include": ["src", "tests", "scripts", "drizzle.config.ts", "vitest.config.ts"]
 }

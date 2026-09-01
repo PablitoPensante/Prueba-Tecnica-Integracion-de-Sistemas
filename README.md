@@ -87,6 +87,18 @@ fallo, reintentos y errores permanentes.
 de entrega del webhook y la reconciliación pertenecen a la etapa 4 y siguen
 pendientes.
 
+### 2026-09-01 — Migraciones compatibles con Linux
+
+- Se reemplazó la ejecución de migraciones mediante la CLI de Drizzle Kit por un
+  script que usa directamente el migrador PostgreSQL de Drizzle ORM.
+- El cambio evita un bloqueo conocido de `drizzle-kit migrate` y conserva el
+  historial normal de migraciones en la base de datos.
+- El nuevo script siempre cierra el pool de conexiones y muestra el error real si
+  una migración falla.
+
+**Resultado:** `npm run db:migrate` puede ejecutarse en entornos Linux donde la
+CLI permanecía congelada después de cargar el driver `pg`.
+
 ### Convención de la bitácora
 
 Cada avance funcional incluirá la fecha, las decisiones tomadas, las pruebas
