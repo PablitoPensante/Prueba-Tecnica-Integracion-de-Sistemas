@@ -34,6 +34,20 @@ PostgreSQL, Zod, Vitest y la separación entre ambos sistemas.
 correctamente. La aplicación de la migración queda pendiente de disponer del
 motor local de Docker.
 
+### 2026-09-01 — Recepción de documentos en Sistema B
+
+- Se implementó `POST /documents` con el contrato solicitado para recibir
+  `documentId`, correo del tercero, URL del archivo y URL de callback.
+- Se agregó validación con Zod y respuestas `400` para entradas inválidas.
+- Se creó un repositorio en memoria desacoplado de Express para simular el estado
+  de las solicitudes de firma mientras se construye el mock.
+- Se devuelve `409 Conflict` cuando el mismo documento se envía nuevamente.
+- Se agregaron pruebas para recepción exitosa, validación y duplicados.
+
+**Resultado:** Sistema B ya puede recibir y conservar solicitudes válidas. El
+cliente HTTP del Sistema A y su política de reintentos quedan para el siguiente
+avance.
+
 ### Convención de la bitácora
 
 Cada avance funcional incluirá la fecha, las decisiones tomadas, las pruebas
