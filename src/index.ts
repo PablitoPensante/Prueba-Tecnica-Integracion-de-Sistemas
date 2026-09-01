@@ -13,7 +13,7 @@ const io = new SocketIOServer(systemAHttpServer, { cors: { origin: "*" } });
 
 io.on("connection", (socket) => {
   socket.on("document:subscribe", async (documentId: string) => {
-    const joinedRooms: string[] = await socket.join(`document:${documentId}`);
+    await socket.join(`document:${documentId}`);
   });
 
   socket.on("admin:subscribe", () => {

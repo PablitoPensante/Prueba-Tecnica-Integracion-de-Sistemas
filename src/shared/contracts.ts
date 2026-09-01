@@ -19,5 +19,5 @@ export type SubmitDocumentInput = z.infer<typeof submitDocumentSchema>;
 export type WebhookPayload = z.infer<typeof webhookPayloadSchema>;
 
 export function parseWebhookPayload(input: unknown): WebhookPayload {
-  return submitDocumentSchema.parse(input);
+  return webhookPayloadSchema.parse(input);
 }

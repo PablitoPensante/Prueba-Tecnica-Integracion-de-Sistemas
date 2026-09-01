@@ -20,7 +20,7 @@ export const webhookStatusEnum = pgEnum("webhook_status", ["approved", "rejected
 
 export const documents = pgTable("documents", {
   id: uuid("id").primaryKey().defaultRandom(),
-  status: documentStatusEnum("status").notNull().default("created"),
+  status: documentStatusEnum("status").notNull().default("pending"),
   thirdPartyEmail: text("third_party_email").notNull(),
   fileUrl: text("file_url").notNull(),
   reason: text("reason"),
