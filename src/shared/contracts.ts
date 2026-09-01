@@ -1,5 +1,10 @@
 import { z } from "zod";
 
+export const createDocumentSchema = z.object({
+  thirdPartyEmail: z.email(),
+  fileUrl: z.url(),
+});
+
 export const submitDocumentSchema = z.object({
   documentId: z.uuid(),
   thirdPartyEmail: z.email(),
@@ -16,6 +21,7 @@ export const webhookPayloadSchema = z.object({
 });
 
 export type SubmitDocumentInput = z.infer<typeof submitDocumentSchema>;
+export type CreateDocumentInput = z.infer<typeof createDocumentSchema>;
 export type WebhookPayload = z.infer<typeof webhookPayloadSchema>;
 
 export function parseWebhookPayload(input: unknown): WebhookPayload {

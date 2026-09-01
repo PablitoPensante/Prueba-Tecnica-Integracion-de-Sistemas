@@ -48,6 +48,24 @@ motor local de Docker.
 cliente HTTP del Sistema A y su política de reintentos quedan para el siguiente
 avance.
 
+### 2026-09-01 — Envío resiliente desde Sistema A
+
+- Se agregó `POST /documents` en Sistema A para crear el registro local y enviarlo
+  a Sistema B.
+- Se implementó un cliente HTTP con timeout, máximo de intentos configurable y
+  backoff exponencial.
+- Los errores HTTP permanentes no se reintentan; los fallos de red, respuestas
+  `429` y errores `5xx` sí se consideran transitorios.
+- El documento cambia de `pending` a `sent` solamente después de que Sistema B
+  confirma la recepción.
+- Si todos los intentos fallan, el documento permanece `pending` y se registra una
+  incidencia.
+- Se separó el acceso a documentos mediante una interfaz con implementaciones para
+  Drizzle/PostgreSQL y memoria, facilitando las pruebas aisladas.
+
+**Resultado:** La etapa 2 queda completa y cubierta por pruebas de envío exitoso,
+fallo, reintentos y errores permanentes.
+
 ### Convención de la bitácora
 
 Cada avance funcional incluirá la fecha, las decisiones tomadas, las pruebas
