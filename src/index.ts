@@ -12,6 +12,10 @@ const systemBHttpServer = createServer(createSystemBApp());
 const io = new SocketIOServer(systemAHttpServer, { cors: { origin: "*" } });
 
 io.on("connection", (socket) => {
+  // TODO(consulta TypeScript #4): Antes de implementar el cliente, ¿cómo
+  // declararíamos las interfaces de eventos de Socket.IO para que
+  // `document:subscribe` acepte solo un UUID validado y responda mediante un
+  // acknowledgement tipado? También debemos impedir rooms arbitrarios.
   socket.on("document:subscribe", (documentId: string) => {
     socket.join(`document:${documentId}`);
   });

@@ -36,6 +36,10 @@ export const webhookEvents = pgTable(
       .notNull()
       .references(() => documents.id),
     status: webhookStatusEnum("status").notNull(),
+    // TODO(consulta TypeScript #3): ¿Deberíamos usar `jsonb(...).$type<...>()`
+    // para recuperar un payload tipado desde Drizzle, o mantenerlo como
+    // `unknown` y obligar a validarlo con Zod al leerlo? ¿Cómo evitamos que el
+    // tipo estático haga parecer confiables datos históricos no validados?
     payload: jsonb("payload").notNull(),
     receivedAt: timestamp("received_at", { withTimezone: true }).notNull().defaultNow(),
     processed: boolean("processed").notNull().default(false),
