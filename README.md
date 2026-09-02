@@ -99,6 +99,24 @@ pendientes.
 **Resultado:** `npm run db:migrate` puede ejecutarse en entornos Linux donde la
 CLI permanecía congelada después de cargar el driver `pg`.
 
+### 2026-09-02 — Inicio de la etapa 4: entrega resiliente de webhooks
+
+- Sistema B permite aprobar o rechazar una solicitud recibida.
+- Después de guardar la decisión, B genera un webhook firmado con HMAC-SHA256 y
+  lo envía automáticamente al callback de Sistema A.
+- La entrega realiza un mínimo de tres intentos con backoff exponencial y conserva
+  el número de intentos, el resultado y el último error.
+- Se añadió `GET /documents/:documentId/status` en Sistema B como fuente de
+  respaldo para consultar la decisión y diagnosticar la entrega.
+- Se agregaron pruebas para firma correcta, recuperación después de errores
+  transitorios y registro de una interrupción persistente.
+
+**Pendiente:** completar la reconciliación en Sistema A cuando el webhook agote
+sus intentos y no sea entregado.
+
+**Resultado:** el primer bloque de la etapa 4 queda implementado y cubierto por
+pruebas; la etapa permanece abierta hasta completar la reconciliación.
+
 ### 2026-09-02 — Interfaces locales para Sistemas A y B
 
 - Sistema A sirve una interfaz para crear documentos y seguir sus estados.
