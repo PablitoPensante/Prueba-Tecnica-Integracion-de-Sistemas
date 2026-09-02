@@ -40,6 +40,24 @@ describe("POST /documents in System A", () => {
     await unlink(resolve(process.cwd(), "uploads", basename(response.body.fileUrl)));
   });
 
+  it("accepts text and spreadsheet-compatible uploads", async () => {
+    const repository = new InMemoryDocumentRepository();
+    const app = createSystemAApp({
+      repository,
+      systemBClient: createClient(vi.fn().mockResolvedValue(undefined)),
+    });
+    const response = await request(app)
+      .post("/documents")
+      .field("thirdPartyEmail", "reviewer@example.com")
+      .attach("document", Buffer.from("name,value\nitem,10"), {
+        filename: "report.csv",
+        contentType: "text/csv",
+      })
+      .expect(201);
+    expect(response.body.fileUrl).toMatch(/\.csv$/);
+    await unlink(resolve(process.cwd(), "uploads", basename(response.body.fileUrl)));
+  });
+
   it("creates, submits and marks a document as sent", async () => {
     const repository = new InMemoryDocumentRepository();
     const submitDocument = vi.fn().mockResolvedValue(undefined);

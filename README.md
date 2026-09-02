@@ -154,6 +154,19 @@ archivo servido por Sistema A.
 
 **Resultado:** 19 pruebas aprobadas y los dos temas disponibles en ambos sistemas.
 
+### 2026-09-02 — Revisión previa y nuevos formatos
+
+- La bandeja de Sistema B muestra primero un único botón **Revisar documento**.
+- La vista previa identifica PDF, documento de texto u hoja de cálculo y ofrece
+  apertura externa para formatos que el navegador no representa directamente.
+- Los botones de aceptar y rechazar aparecen dentro de la revisión, después de
+  presentar el documento al usuario.
+- Sistema A admite además archivos XLS, XLSX, TXT y CSV, manteniendo el límite de
+  10 MB y el almacenamiento con nombre aleatorio.
+- El modal de rechazo se conserva como un segundo paso con motivo obligatorio.
+
+**Resultado:** 20 pruebas aprobadas, incluida la carga de una hoja CSV.
+
 ### Convención de la bitácora
 
 Cada avance funcional incluirá la fecha, las decisiones tomadas, las pruebas

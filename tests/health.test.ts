@@ -26,6 +26,8 @@ describe("service health checks", () => {
     const response = await request(createSystemBApp()).get("/");
     expect(response.status).toBe(200);
     expect(response.text).toContain("Sistema B · Firma documental");
+    expect(response.text).toContain("Revisar documento");
+    expect(response.text).toContain("previewDialog");
   });
 
   it("serves the shared blue light and dark theme", async () => {
