@@ -7,10 +7,59 @@ Proyecto de prueba técnica que simula dos sistemas desacoplados:
 
 ## Estado del proyecto
 
-En construcción por etapas. La primera etapa prepara TypeScript, Express, Drizzle,
-PostgreSQL, Zod, Vitest y la separación entre ambos sistemas.
+En desarrollo activo. El seguimiento se mantiene mediante el siguiente checklist;
+el historial posterior se conserva únicamente como referencia de las decisiones ya
+tomadas.
 
-## Bitácora de desarrollo
+### Arquitectura e integración
+
+- [x] Separar Sistema A y Sistema B en aplicaciones Express independientes.
+- [x] Configurar TypeScript estricto, Zod, Drizzle ORM y PostgreSQL.
+- [x] Implementar envío A → B con timeout, reintentos y backoff exponencial.
+- [x] Implementar decisiones de aprobación y rechazo en Sistema B.
+- [x] Firmar webhooks B → A mediante HMAC-SHA256.
+- [x] Validar la firma y rechazar webhooks inválidos con `401`.
+- [x] Garantizar idempotencia por `documentId + status`.
+- [x] Reintentar la entrega del webhook un mínimo de tres veces.
+- [x] Exponer `GET /documents/:id/status` como respaldo en Sistema B.
+- [ ] Implementar reconciliación en Sistema A cuando el webhook no sea entregado.
+
+### Datos, archivos e incidencias
+
+- [x] Crear tablas de documentos, eventos e incidencias y sus migraciones.
+- [x] Ejecutar las migraciones correctamente en PostgreSQL local.
+- [x] Subir PDF, Word, Excel, TXT y CSV con límite de 10 MB.
+- [x] Eliminar documentos, archivos y registros relacionados desde Sistema A.
+- [x] Persistir solicitudes de Sistema B entre reinicios.
+- [x] Eliminar solicitudes almacenadas en Sistema B.
+- [x] Registrar fallos de envío y firmas inválidas.
+- [ ] Persistir los fallos de entrega de Sistema B en una base de datos de auditoría.
+
+### Interfaces y tiempo real
+
+- [x] Crear frontend local para Sistema A.
+- [x] Crear frontend local para Sistema B sin login ni administración.
+- [x] Incorporar carga, seguimiento, vista previa, aprobación y rechazo.
+- [x] Incorporar un modal de rechazo con motivo obligatorio.
+- [x] Incorporar un tema azul claro y oscuro persistente.
+- [x] Permitir eliminar registros desde ambos frontends.
+- [ ] Emitir `document:statusChanged` al room del documento mediante Socket.IO.
+- [ ] Actualizar el frontend de Sistema A en vivo, sin polling.
+- [ ] Emitir `integration:incident` para interrupciones críticas.
+
+### Pruebas y entrega final
+
+- [x] Cubrir flujo aprobado, firma inválida e idempotencia.
+- [x] Cubrir carga multipart, reintentos, persistencia y eliminación.
+- [x] Mantener 23 pruebas automatizadas aprobadas.
+- [ ] Añadir pruebas de integración contra PostgreSQL real.
+- [ ] Probar el flujo completo A → B → webhook → PostgreSQL → Socket.IO.
+- [ ] Crear el comando `npm run demo` sin intervención manual.
+- [ ] Añadir un diagrama Mermaid del flujo completo.
+- [ ] Documentar HMAC, idempotencia y una evolución con colas y dead-letter queue.
+- [ ] Preparar el cierre versionado y la entrega final del proyecto.
+
+## Historial de avances
 
 ### 2026-09-01 — Inicio y arquitectura base
 
@@ -181,12 +230,6 @@ archivo servido por Sistema A.
 
 **Resultado:** 23 pruebas aprobadas en 7 archivos y persistencia de Sistema B
 confirmada después de reiniciar el proceso.
-
-### Convención de la bitácora
-
-Cada avance funcional incluirá la fecha, las decisiones tomadas, las pruebas
-realizadas y cualquier pendiente o riesgo conocido. La misma unidad de trabajo
-se registrará mediante un commit descriptivo y se publicará en GitHub.
 
 ## Inicio local
 
