@@ -1,8 +1,9 @@
 import { Router } from "express";
-import { submitDocumentSchema } from "../../shared/contracts.js";
+import { decideDocumentSchema, submitDocumentSchema } from "../../shared/contracts.js";
 import type { SigningRequestStore } from "../signing-request-store.js";
+import type { WebhookDelivery } from "../webhook-delivery.js";
 
-export function createDocumentsRouter(store: SigningRequestStore) {
+export function createDocumentsRouter(store: SigningRequestStore, delivery: WebhookDelivery) {
   const router = Router();
 
   router.post("/", (request, response) => {
@@ -23,6 +24,8 @@ export function createDocumentsRouter(store: SigningRequestStore) {
       receivedAt: signingRequest.receivedAt.toISOString(),
     });
   });
+  router.get("/:documentId/status", (request, response) => { const item = store.findByDocumentId(request.params.documentId); if (!item) { response.status(404).json({ error: "Document not found" }); return; } response.json({ documentId: item.documentId, status: item.status, ...(item.reason ? { reason: item.reason } : {}), ...(item.decidedAt ? { timestamp: item.decidedAt.toISOString() } : {}), deliveryStatus: item.deliveryStatus, deliveryAttempts: item.deliveryAttempts, ...(item.lastDeliveryError ? { lastDeliveryError: item.lastDeliveryError } : {}) }); });
+  router.post("/:documentId/decision", async (request, response) => { const current = store.findByDocumentId(request.params.documentId); if (!current) { response.status(404).json({ error: "Document not found" }); return; } if (current.status !== "pending") { response.status(409).json({ error: "Document already decided" }); return; } const input = decideDocumentSchema.parse(request.body); const decided = store.decide(current.documentId, input); if (!decided?.decidedAt || decided.status === "pending") throw new Error("Decision could not be persisted"); const result = await delivery.deliver(decided.callbackUrl, { documentId: decided.documentId, status: decided.status, ...(decided.reason ? { reason: decided.reason } : {}), timestamp: decided.decidedAt.toISOString() }); store.recordDelivery(decided.documentId, result); response.status(result.delivered ? 200 : 202).json({ documentId: decided.documentId, status: decided.status, webhook: result }); });
 
   return router;
 }
