@@ -27,4 +27,11 @@ describe("service health checks", () => {
     expect(response.status).toBe(200);
     expect(response.text).toContain("Sistema B · Firma documental");
   });
+
+  it("serves the shared blue light and dark theme", async () => {
+    const response = await request(createSystemAApp()).get("/assets/theme.css");
+    expect(response.status).toBe(200);
+    expect(response.text).toContain("--primary: #2563eb");
+    expect(response.text).toContain('[data-theme="dark"]');
+  });
 });

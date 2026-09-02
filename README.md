@@ -125,6 +125,17 @@ CLI permanecía congelada después de cargar el driver `pg`.
 **Resultado:** 18 pruebas aprobadas, incluyendo carga multipart y acceso al
 archivo servido por Sistema A.
 
+### 2026-09-02 — Tema azul claro y oscuro
+
+- Se reemplazó el color principal por una identidad azul compartida entre ambos
+  sistemas (`#2563eb` en claro y `#3b82f6` en oscuro).
+- Se añadió un selector de tema en los dos encabezados con preferencia persistente
+  y detección inicial del modo del sistema operativo.
+- El modo oscuro adapta fondos, tarjetas, bordes, estados y el modal de rechazo,
+  conservando contraste y una navegación consistente entre A y B.
+
+**Resultado:** 19 pruebas aprobadas y los dos temas disponibles en ambos sistemas.
+
 ### Convención de la bitácora
 
 Cada avance funcional incluirá la fecha, las decisiones tomadas, las pruebas
