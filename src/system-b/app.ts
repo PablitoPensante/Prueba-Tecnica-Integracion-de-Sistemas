@@ -1,4 +1,5 @@
 import express from "express";
+import { resolve } from "node:path";
 import { env } from "../config/env.js";
 import { errorHandler, notFoundHandler } from "../shared/http.js";
 import { createDocumentsRouter } from "./routes/documents.js";
@@ -24,6 +25,8 @@ export function createSystemBApp(dependencies: SystemBDependencies = {}) {
     response.json({ system: "B", status: "ok" });
   });
   app.use("/documents", createDocumentsRouter(signingRequestStore, webhookDelivery));
+  app.use("/assets", express.static(resolve(process.cwd(), "frontend/shared")));
+  app.use(express.static(resolve(process.cwd(), "frontend/system-b")));
 
   app.use(notFoundHandler);
   app.use(errorHandler);

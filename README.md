@@ -99,6 +99,19 @@ pendientes.
 **Resultado:** `npm run db:migrate` puede ejecutarse en entornos Linux donde la
 CLI permanecía congelada después de cargar el driver `pg`.
 
+### 2026-09-02 — Interfaces locales para Sistemas A y B
+
+- Sistema A sirve una interfaz para crear documentos y seguir sus estados.
+- Sistema B sirve una bandeja de solicitudes para aprobar o rechazar documentos.
+- Se añadieron consultas para recuperar documentos en A y listar solicitudes en B.
+- Ambas interfaces comparten la paleta de Caja Áurea: fondo `#eef2f7`, texto
+  `#111827`, borde `#d1d5db`, verde principal `#166534` y acento `#0f766e`.
+- Las interfaces se ejecutan junto con las APIs, sin login ni vistas de
+  administración.
+
+**Resultado:** 17 pruebas aprobadas y frontends disponibles localmente en
+`http://localhost:3000` y `http://localhost:4100`.
+
 ### Convención de la bitácora
 
 Cada avance funcional incluirá la fecha, las decisiones tomadas, las pruebas

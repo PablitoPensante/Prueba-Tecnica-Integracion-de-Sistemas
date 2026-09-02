@@ -14,6 +14,16 @@ function validSubmission(documentId: string = randomUUID()) {
 }
 
 describe("POST /documents in System B", () => {
+  it("lists received documents for its frontend", async () => {
+    const app = createSystemBApp();
+    const input = validSubmission();
+    await request(app).post("/documents").send(input).expect(202);
+    const response = await request(app).get("/documents").expect(200);
+    expect(response.body).toEqual([
+      expect.objectContaining({ documentId: input.documentId, status: "pending" }),
+    ]);
+  });
+
   it("accepts and stores a valid signing request", async () => {
     const store = new InMemorySigningRequestStore();
     const input = validSubmission();

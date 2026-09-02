@@ -1,4 +1,5 @@
 import express from "express";
+import { resolve } from "node:path";
 import { env } from "../config/env.js";
 import { db } from "../db/client.js";
 import { errorHandler, notFoundHandler } from "../shared/http.js";
@@ -45,6 +46,9 @@ export function createSystemAApp(dependencies: SystemADependencies = {}) {
       hmacSecret: dependencies.hmacSecret ?? env.HMAC_SECRET,
     }),
   );
+
+  app.use("/assets", express.static(resolve(process.cwd(), "frontend/shared")));
+  app.use(express.static(resolve(process.cwd(), "frontend/system-a")));
 
   app.use(notFoundHandler);
   app.use(errorHandler);

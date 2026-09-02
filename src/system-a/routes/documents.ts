@@ -12,6 +12,15 @@ interface DocumentsRouterOptions {
 export function createDocumentsRouter(options: DocumentsRouterOptions) {
   const router = Router();
 
+  router.get("/:documentId", async (request, response) => {
+    const document = await options.repository.findById(request.params.documentId);
+    if (!document) {
+      response.status(404).json({ error: "Document not found" });
+      return;
+    }
+    response.json(document);
+  });
+
   router.post("/", async (request, response) => {
     const input = createDocumentSchema.parse(request.body);
     const document = await options.repository.create(input);

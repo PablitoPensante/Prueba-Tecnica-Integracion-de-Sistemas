@@ -6,6 +6,19 @@ import type { WebhookDelivery } from "../webhook-delivery.js";
 export function createDocumentsRouter(store: SigningRequestStore, delivery: WebhookDelivery) {
   const router = Router();
 
+  router.get("/", (_request, response) => {
+    response.json(store.findAll().map((item) => ({
+      documentId: item.documentId,
+      thirdPartyEmail: item.thirdPartyEmail,
+      fileUrl: item.fileUrl,
+      status: item.status,
+      receivedAt: item.receivedAt.toISOString(),
+      reason: item.reason,
+      deliveryStatus: item.deliveryStatus,
+      deliveryAttempts: item.deliveryAttempts,
+    })));
+  });
+
   router.post("/", (request, response) => {
     const input = submitDocumentSchema.parse(request.body);
     const signingRequest = store.create(input);

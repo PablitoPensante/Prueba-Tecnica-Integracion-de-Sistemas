@@ -15,4 +15,16 @@ describe("service health checks", () => {
     expect(response.status).toBe(200);
     expect(response.body).toEqual({ system: "B", status: "ok" });
   });
+
+  it("serves the System A frontend", async () => {
+    const response = await request(createSystemAApp()).get("/");
+    expect(response.status).toBe(200);
+    expect(response.text).toContain("Sistema A · Gestión documental");
+  });
+
+  it("serves the System B frontend", async () => {
+    const response = await request(createSystemBApp()).get("/");
+    expect(response.status).toBe(200);
+    expect(response.text).toContain("Sistema B · Firma documental");
+  });
 });
