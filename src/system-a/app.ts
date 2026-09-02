@@ -6,6 +6,7 @@ import { errorHandler, notFoundHandler } from "../shared/http.js";
 import type { DocumentRepository } from "./document-repository.js";
 import { DrizzleDocumentRepository } from "./drizzle-document-repository.js";
 import { createDocumentsRouter } from "./routes/documents.js";
+import { uploadsDirectory } from "./document-upload.js";
 import { createWebhooksRouter } from "./routes/webhooks.js";
 import { FetchSystemBClient, type SystemBClient } from "./system-b-client.js";
 
@@ -37,8 +38,10 @@ export function createSystemAApp(dependencies: SystemADependencies = {}) {
       systemBClient,
       callbackUrl:
         dependencies.callbackUrl ?? `${env.SYSTEM_A_URL}/webhooks/absign`,
+      publicUrl: env.SYSTEM_A_URL,
     }),
   );
+  app.use("/uploads", express.static(uploadsDirectory));
   app.use(
     "/webhooks",
     createWebhooksRouter({

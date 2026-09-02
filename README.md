@@ -112,6 +112,19 @@ CLI permanecía congelada después de cargar el driver `pg`.
 **Resultado:** 17 pruebas aprobadas y frontends disponibles localmente en
 `http://localhost:3000` y `http://localhost:4100`.
 
+### 2026-09-02 — Carga real de archivos y rechazo mejorado
+
+- Sistema A permite seleccionar y subir documentos PDF, DOC o DOCX de hasta
+  10 MB, los almacena localmente y entrega a Sistema B una URL accesible.
+- Los archivos se guardan con identificadores aleatorios y el contenido de
+  `uploads/` permanece fuera del control de versiones.
+- Sistema B reemplaza el diálogo nativo de rechazo por un modal propio con motivo
+  obligatorio, contador de caracteres, cierre por fondo y foco automático.
+- El modal conserva la paleta de Caja Áurea y funciona sin login ni roles.
+
+**Resultado:** 18 pruebas aprobadas, incluyendo carga multipart y acceso al
+archivo servido por Sistema A.
+
 ### Convención de la bitácora
 
 Cada avance funcional incluirá la fecha, las decisiones tomadas, las pruebas

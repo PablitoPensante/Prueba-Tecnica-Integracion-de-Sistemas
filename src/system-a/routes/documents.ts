@@ -2,11 +2,13 @@ import { Router } from "express";
 import { createDocumentSchema } from "../../shared/contracts.js";
 import type { DocumentRepository } from "../document-repository.js";
 import type { SystemBClient } from "../system-b-client.js";
+import { documentUpload } from "../document-upload.js";
 
 interface DocumentsRouterOptions {
   repository: DocumentRepository;
   systemBClient: SystemBClient;
   callbackUrl: string;
+  publicUrl: string;
 }
 
 export function createDocumentsRouter(options: DocumentsRouterOptions) {
@@ -21,8 +23,13 @@ export function createDocumentsRouter(options: DocumentsRouterOptions) {
     response.json(document);
   });
 
-  router.post("/", async (request, response) => {
-    const input = createDocumentSchema.parse(request.body);
+  router.post("/", documentUpload.single("document"), async (request, response) => {
+    const input = createDocumentSchema.parse({
+      thirdPartyEmail: request.body.thirdPartyEmail,
+      fileUrl: request.file
+        ? `${options.publicUrl}/uploads/${request.file.filename}`
+        : request.body.fileUrl,
+    });
     const document = await options.repository.create(input);
 
     try {

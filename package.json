@@ -19,12 +19,14 @@
     "dotenv": "17.2.3",
     "drizzle-orm": "0.45.2",
     "express": "5.2.1",
+    "multer": "^2.3.0",
     "pg": "8.23.0",
     "socket.io": "4.8.3",
     "zod": "4.1.11"
   },
   "devDependencies": {
     "@types/express": "5.0.5",
+    "@types/multer": "^2.2.0",
     "@types/node": "24.10.1",
     "@types/pg": "8.15.6",
     "@types/supertest": "6.0.3",

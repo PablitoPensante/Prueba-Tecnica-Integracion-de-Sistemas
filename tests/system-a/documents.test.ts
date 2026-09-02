@@ -1,4 +1,6 @@
 import request from "supertest";
+import { unlink } from "node:fs/promises";
+import { basename, resolve } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { createSystemAApp } from "../../src/system-a/app.js";
 import { InMemoryDocumentRepository } from "../../src/system-a/document-repository.js";
@@ -12,6 +14,32 @@ function createClient(submitDocument: SystemBClient["submitDocument"]): SystemBC
 }
 
 describe("POST /documents in System A", () => {
+  it("uploads a document and submits its local public URL", async () => {
+    const repository = new InMemoryDocumentRepository();
+    const submitDocument = vi.fn().mockResolvedValue(undefined);
+    const app = createSystemAApp({
+      repository,
+      systemBClient: createClient(submitDocument),
+      callbackUrl: "http://system-a.test/webhooks/absign",
+    });
+
+    const response = await request(app)
+      .post("/documents")
+      .field("thirdPartyEmail", "reviewer@example.com")
+      .attach("document", Buffer.from("%PDF-1.4 test"), {
+        filename: "contract.pdf",
+        contentType: "application/pdf",
+      })
+      .expect(201);
+
+    expect(response.body.fileUrl).toMatch(/^http:\/\/localhost:3000\/uploads\/.+\.pdf$/);
+    expect(submitDocument).toHaveBeenCalledWith(
+      expect.objectContaining({ fileUrl: response.body.fileUrl }),
+    );
+    await request(app).get(new URL(response.body.fileUrl).pathname).expect(200);
+    await unlink(resolve(process.cwd(), "uploads", basename(response.body.fileUrl)));
+  });
+
   it("creates, submits and marks a document as sent", async () => {
     const repository = new InMemoryDocumentRepository();
     const submitDocument = vi.fn().mockResolvedValue(undefined);
