@@ -1,4 +1,6 @@
 import { Router } from "express";
+import { unlink } from "node:fs/promises";
+import { basename, resolve } from "node:path";
 import { createDocumentSchema } from "../../shared/contracts.js";
 import type { DocumentRepository } from "../document-repository.js";
 import type { SystemBClient } from "../system-b-client.js";
@@ -21,6 +23,23 @@ export function createDocumentsRouter(options: DocumentsRouterOptions) {
       return;
     }
     response.json(document);
+  });
+
+  router.delete("/:documentId", async (request, response) => {
+    const document = await options.repository.deleteById(request.params.documentId);
+    if (!document) {
+      response.status(404).json({ error: "Document not found" });
+      return;
+    }
+    try {
+      const url = new URL(document.fileUrl);
+      if (url.pathname.startsWith("/uploads/")) {
+        await unlink(resolve(process.cwd(), "uploads", basename(url.pathname)));
+      }
+    } catch {
+      // The database record is deleted even if an old external file is unavailable.
+    }
+    response.sendStatus(204);
   });
 
   router.post("/", documentUpload.single("document"), async (request, response) => {

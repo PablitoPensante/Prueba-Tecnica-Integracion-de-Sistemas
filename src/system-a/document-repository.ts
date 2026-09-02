@@ -24,6 +24,7 @@ export interface IntegrationIncidentInput {
 export interface DocumentRepository {
   create(input: CreateDocumentInput): Promise<DocumentRecord>;
   findById(documentId: string): Promise<DocumentRecord | undefined>;
+  deleteById(documentId: string): Promise<DocumentRecord | undefined>;
   markSent(documentId: string, sentAt: Date): Promise<DocumentRecord | undefined>;
   processWebhook(payload: WebhookPayload): Promise<WebhookProcessingResult>;
   recordIncident(incident: IntegrationIncidentInput): Promise<void>;
@@ -49,6 +50,12 @@ export class InMemoryDocumentRepository implements DocumentRepository {
 
   async findById(documentId: string): Promise<DocumentRecord | undefined> {
     return this.documents.get(documentId);
+  }
+
+  async deleteById(documentId: string): Promise<DocumentRecord | undefined> {
+    const document = this.documents.get(documentId);
+    if (document) this.documents.delete(documentId);
+    return document;
   }
 
   async markSent(

@@ -104,3 +104,12 @@ describe("POST /documents in System A", () => {
     ]);
   });
 });
+
+describe("DELETE /documents/:documentId in System A", () => {
+  it("deletes an existing document", async () => {
+    const repository = new InMemoryDocumentRepository();
+    const document = await repository.create({ thirdPartyEmail: "reviewer@example.com", fileUrl: "https://example.com/document.pdf" });
+    await request(createSystemAApp({ repository })).delete(`/documents/${document.id}`).expect(204);
+    expect(await repository.findById(document.id)).toBeUndefined();
+  });
+});

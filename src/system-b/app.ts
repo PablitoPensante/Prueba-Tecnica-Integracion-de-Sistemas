@@ -6,6 +6,7 @@ import { createDocumentsRouter } from "./routes/documents.js";
 import { FetchWebhookDelivery, type WebhookDelivery } from "./webhook-delivery.js";
 import {
   InMemorySigningRequestStore,
+  FileSigningRequestStore,
   type SigningRequestStore,
 } from "./signing-request-store.js";
 
@@ -16,8 +17,10 @@ interface SystemBDependencies {
 
 export function createSystemBApp(dependencies: SystemBDependencies = {}) {
   const app = express();
-  const signingRequestStore =
-    dependencies.signingRequestStore ?? new InMemorySigningRequestStore();
+  const signingRequestStore = dependencies.signingRequestStore ??
+    (env.NODE_ENV === "test"
+      ? new InMemorySigningRequestStore()
+      : new FileSigningRequestStore(resolve(process.cwd(), "data/system-b-requests.json")));
   const webhookDelivery = dependencies.webhookDelivery ?? new FetchWebhookDelivery({ hmacSecret: env.HMAC_SECRET, timeoutMs: env.HTTP_TIMEOUT_MS, maxAttempts: env.WEBHOOK_MAX_ATTEMPTS, baseDelayMs: env.WEBHOOK_BASE_DELAY_MS });
 
   app.use(express.json());

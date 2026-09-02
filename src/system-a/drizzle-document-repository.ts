@@ -33,6 +33,21 @@ export class DrizzleDocumentRepository implements DocumentRepository {
     return document;
   }
 
+  async deleteById(documentId: string): Promise<DocumentRecord | undefined> {
+    return this.database.transaction(async (transaction) => {
+      const [document] = await transaction
+        .select()
+        .from(schema.documents)
+        .where(eq(schema.documents.id, documentId))
+        .limit(1);
+      if (!document) return undefined;
+      await transaction.delete(schema.webhookEvents).where(eq(schema.webhookEvents.documentId, documentId));
+      await transaction.delete(schema.integrationIncidents).where(eq(schema.integrationIncidents.documentId, documentId));
+      await transaction.delete(schema.documents).where(eq(schema.documents.id, documentId));
+      return document;
+    });
+  }
+
   async markSent(
     documentId: string,
     sentAt: Date,

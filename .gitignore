@@ -4,3 +4,5 @@ dist/
 coverage/
 uploads/*
 !uploads/.gitkeep
+data/*
+!data/.gitkeep

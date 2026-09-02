@@ -167,6 +167,21 @@ archivo servido por Sistema A.
 
 **Resultado:** 20 pruebas aprobadas, incluida la carga de una hoja CSV.
 
+### 2026-09-02 — Persistencia y eliminación de registros
+
+- Sistema B dejó de depender exclusivamente de memoria y conserva sus solicitudes
+  en `data/system-b-requests.json` entre reinicios.
+- Altas, decisiones, resultados de webhook y eliminaciones actualizan el archivo
+  persistente; `data/` permanece fuera del repositorio.
+- Ambos frontends incorporan un botón **Eliminar** con confirmación.
+- Sistema A elimina el documento de PostgreSQL, sus eventos e incidencias
+  relacionadas y el archivo local; Sistema B elimina su solicitud persistida.
+- Se verificó el ciclo real crear → reiniciar → recuperar → eliminar en las dos
+  APIs sin afectar registros del usuario.
+
+**Resultado:** 23 pruebas aprobadas en 7 archivos y persistencia de Sistema B
+confirmada después de reiniciar el proceso.
+
 ### Convención de la bitácora
 
 Cada avance funcional incluirá la fecha, las decisiones tomadas, las pruebas

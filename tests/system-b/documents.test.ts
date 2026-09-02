@@ -64,3 +64,14 @@ describe("POST /documents in System B", () => {
     expect(duplicateResponse.body.documentId).toBe(input.documentId);
   });
 });
+
+describe("DELETE /documents/:documentId in System B", () => {
+  it("deletes a signing request", async () => {
+    const store = new InMemorySigningRequestStore();
+    const app = createSystemBApp({ signingRequestStore: store });
+    const input = validSubmission();
+    await request(app).post("/documents").send(input).expect(202);
+    await request(app).delete(`/documents/${input.documentId}`).expect(204);
+    expect(store.findByDocumentId(input.documentId)).toBeUndefined();
+  });
+});
