@@ -5,6 +5,8 @@ Proyecto de prueba técnica que simula dos sistemas desacoplados:
 - **Sistema A:** gestor de documentos y receptor del webhook.
 - **Sistema B:** plataforma de firma simulada y emisora del webhook.
 
+Versión actual: **1.1.0**.
+
 ## Estado del proyecto
 
 En desarrollo activo. El seguimiento se mantiene mediante el siguiente checklist;
@@ -51,13 +53,40 @@ tomadas.
 
 - [x] Cubrir flujo aprobado, firma inválida e idempotencia.
 - [x] Cubrir carga multipart, reintentos, persistencia y eliminación.
-- [x] Mantener 29 pruebas automatizadas aprobadas.
-- [ ] Añadir pruebas de integración contra PostgreSQL real.
-- [ ] Probar el flujo completo A → B → webhook → PostgreSQL → Socket.IO.
+- [x] Mantener 29 pruebas unitarias/de componentes y 1 prueba integral aprobadas.
+- [x] Añadir pruebas de integración contra PostgreSQL real.
+- [x] Probar el flujo completo A → B → webhook → PostgreSQL → Socket.IO.
 - [ ] Crear el comando `npm run demo` sin intervención manual.
-- [ ] Añadir un diagrama Mermaid del flujo completo.
+- [x] Añadir un diagrama Mermaid del flujo completo.
 - [ ] Documentar HMAC, idempotencia y una evolución con colas y dead-letter queue.
-- [ ] Preparar el cierre versionado y la entrega final del proyecto.
+- [x] Preparar el cierre versionado de la etapa 6.
+
+## Flujo de integración
+
+```mermaid
+sequenceDiagram
+    participant UIA as Frontend A
+    participant A as Sistema A
+    participant DB as PostgreSQL
+    participant B as Sistema B
+    participant RT as Socket.IO
+    UIA->>A: Crear documento con asunto
+    A->>DB: Guardar pending
+    A->>B: POST /documents
+    B-->>A: 202 Accepted
+    A->>DB: Cambiar a sent
+    UIA->>RT: Suscribir document:id
+    B->>A: Webhook HMAC (approved/rejected)
+    A->>DB: Auditar y actualizar estado
+    A->>RT: document:statusChanged
+    RT-->>UIA: Actualización en vivo
+    alt webhook agotado
+        A->>B: GET /documents/id/status
+        B-->>A: Estado definitivo
+        A->>DB: Reconciliar y registrar incidencia
+        A->>RT: Estado recuperado
+    end
+```
 
 ## Historial de avances
 
@@ -231,13 +260,12 @@ archivo servido por Sistema A.
 **Resultado:** 23 pruebas aprobadas en 7 archivos y persistencia de Sistema B
 confirmada después de reiniciar el proceso.
 
-## Inicio local
+## Inicio local con Node.js
 
 ```bash
 cp .env.example .env
 npm install
-docker compose up -d
-npm run db:generate
+docker compose up -d postgres
 npm run db:migrate
 npm run dev
 ```
@@ -245,10 +273,23 @@ npm run dev
 Sistema A queda disponible en `http://localhost:3000` y Sistema B en
 `http://localhost:4000`.
 
+## Inicio completo con Docker
+
+```bash
+cp .env.example .env
+docker compose up --build -d
+docker compose ps
+```
+
+El healthcheck del servicio `app` comprueba las rutas `/health` de ambos sistemas.
+
 ## Comandos
 
 - `npm run dev`: inicia ambos sistemas en modo desarrollo.
 - `npm run typecheck`: verifica los tipos sin generar archivos.
 - `npm test`: ejecuta las pruebas.
+- `npm run test:integration`: aplica migraciones y ejecuta el recorrido real con PostgreSQL.
+- `npm run build`: compila el proyecto en `dist/`.
+- `npm run check`: ejecuta tipos, pruebas unitarias/de componentes y build.
 - `npm run db:generate`: genera migraciones desde el esquema de Drizzle.
 - `npm run db:migrate`: aplica migraciones pendientes.

@@ -1,15 +1,18 @@
 {
   "name": "absign-integration",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "start": "tsx src/index.ts",
+    "build": "tsc -p tsconfig.build.json",
+    "check": "npm run typecheck && npm test && npm run build",
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx scripts/migrate.ts",
     "test": "vitest run",
+    "test:integration": "npm run db:migrate && RUN_POSTGRES_TESTS=true vitest run tests/integration",
     "test:watch": "vitest"
   },
   "engines": {

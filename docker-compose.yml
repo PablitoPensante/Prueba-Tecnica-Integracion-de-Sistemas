@@ -15,5 +15,37 @@ services:
       timeout: 3s
       retries: 10
 
+  app:
+    build: .
+    environment:
+      NODE_ENV: production
+      SYSTEM_A_PORT: 3000
+      SYSTEM_B_PORT: 4000
+      SYSTEM_A_URL: http://localhost:3000
+      SYSTEM_B_URL: http://localhost:4000
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/absign
+      HMAC_SECRET: ${HMAC_SECRET:-development-secret-change-me}
+      ADMIN_SOCKET_TOKEN: ${ADMIN_SOCKET_TOKEN:-development-admin-token}
+      HTTP_TIMEOUT_MS: 3000
+      WEBHOOK_MAX_ATTEMPTS: 3
+      WEBHOOK_BASE_DELAY_MS: 200
+      RECONCILIATION_INTERVAL_MS: 5000
+    ports:
+      - "3000:3000"
+      - "4000:4000"
+    volumes:
+      - absign_uploads:/app/uploads
+      - absign_system_b_data:/app/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "Promise.all([fetch('http://localhost:3000/health'),fetch('http://localhost:4000/health')]).then(r=>{if(r.some(x=>!x.ok))process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
 volumes:
   absign_postgres_data:
+  absign_uploads:
+  absign_system_b_data:
