@@ -1,11 +1,16 @@
 import { createServer } from "node:http";
 import { Server as SocketIOServer } from "socket.io";
 import { env } from "./config/env.js";
-import { pool } from "./db/client.js";
+import { db, pool } from "./db/client.js";
 import { createSystemAApp } from "./system-a/app.js";
+import { DrizzleDocumentRepository } from "./system-a/drizzle-document-repository.js";
+import { DocumentReconciler } from "./system-a/reconciliation.js";
+import { FetchSystemBClient } from "./system-a/system-b-client.js";
 import { createSystemBApp } from "./system-b/app.js";
 
-const systemAHttpServer = createServer(createSystemAApp());
+const documentRepository = new DrizzleDocumentRepository(db);
+const systemBClient = new FetchSystemBClient({ baseUrl: env.SYSTEM_B_URL, timeoutMs: env.HTTP_TIMEOUT_MS });
+const systemAHttpServer = createServer(createSystemAApp({ repository: documentRepository, systemBClient }));
 const systemBHttpServer = createServer(createSystemBApp());
 
 // Socket.IO belongs to System A because that is where the UI observes state changes.
@@ -21,6 +26,15 @@ io.on("connection", (socket) => {
   });
 });
 
+const reconciler = new DocumentReconciler(documentRepository, systemBClient);
+let reconciliationRunning = false;
+const reconciliationTimer = setInterval(() => {
+  if (reconciliationRunning) return;
+  reconciliationRunning = true;
+  void reconciler.runOnce().finally(() => { reconciliationRunning = false; });
+}, env.RECONCILIATION_INTERVAL_MS);
+reconciliationTimer.unref();
+
 systemAHttpServer.listen(env.SYSTEM_A_PORT, () => {
   console.log(`System A listening at ${env.SYSTEM_A_URL}`);
 });
@@ -31,6 +45,7 @@ systemBHttpServer.listen(env.SYSTEM_B_PORT, () => {
 
 async function shutdown(signal: string) {
   console.log(`Received ${signal}; shutting down.`);
+  clearInterval(reconciliationTimer);
   io.close();
   systemAHttpServer.close();
   systemBHttpServer.close();

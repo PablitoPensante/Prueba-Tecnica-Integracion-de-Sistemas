@@ -22,7 +22,7 @@ tomadas.
 - [x] Garantizar idempotencia por `documentId + status`.
 - [x] Reintentar la entrega del webhook un mínimo de tres veces.
 - [x] Exponer `GET /documents/:id/status` como respaldo en Sistema B.
-- [ ] Implementar reconciliación en Sistema A cuando el webhook no sea entregado.
+- [x] Implementar reconciliación en Sistema A cuando el webhook no sea entregado.
 
 ### Datos, archivos e incidencias
 
@@ -33,7 +33,7 @@ tomadas.
 - [x] Persistir solicitudes de Sistema B entre reinicios.
 - [x] Eliminar solicitudes almacenadas en Sistema B.
 - [x] Registrar fallos de envío y firmas inválidas.
-- [ ] Persistir los fallos de entrega de Sistema B en una base de datos de auditoría.
+- [x] Persistir los fallos de entrega de Sistema B en una base de datos de auditoría.
 
 ### Interfaces y tiempo real
 
@@ -51,7 +51,7 @@ tomadas.
 
 - [x] Cubrir flujo aprobado, firma inválida e idempotencia.
 - [x] Cubrir carga multipart, reintentos, persistencia y eliminación.
-- [x] Mantener 23 pruebas automatizadas aprobadas.
+- [x] Mantener 27 pruebas automatizadas aprobadas.
 - [ ] Añadir pruebas de integración contra PostgreSQL real.
 - [ ] Probar el flujo completo A → B → webhook → PostgreSQL → Socket.IO.
 - [ ] Crear el comando `npm run demo` sin intervención manual.

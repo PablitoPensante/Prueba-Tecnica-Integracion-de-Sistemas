@@ -1,5 +1,6 @@
 import type {
   CreateDocumentInput,
+  WebhookData,
   WebhookPayload,
 } from "../shared/contracts.js";
 
@@ -13,7 +14,7 @@ export interface DocumentRecord extends CreateDocumentInput {
   resolvedAt: Date | null;
 }
 
-export type WebhookProcessingResult = "processed" | "duplicate" | "not_found";
+export type WebhookProcessingResult = "processed" | "duplicate" | "not_found" | "invalid_transition";
 
 export interface IntegrationIncidentInput {
   type: string;
@@ -24,9 +25,11 @@ export interface IntegrationIncidentInput {
 export interface DocumentRepository {
   create(input: CreateDocumentInput): Promise<DocumentRecord>;
   findById(documentId: string): Promise<DocumentRecord | undefined>;
+  findByStatus(status: DocumentStatus): Promise<DocumentRecord[]>;
   deleteById(documentId: string): Promise<DocumentRecord | undefined>;
   markSent(documentId: string, sentAt: Date): Promise<DocumentRecord | undefined>;
   processWebhook(payload: WebhookPayload): Promise<WebhookProcessingResult>;
+  processReconciliation(payload: WebhookData): Promise<WebhookProcessingResult>;
   recordIncident(incident: IntegrationIncidentInput): Promise<void>;
 }
 
@@ -52,6 +55,10 @@ export class InMemoryDocumentRepository implements DocumentRepository {
     return this.documents.get(documentId);
   }
 
+  async findByStatus(status: DocumentStatus): Promise<DocumentRecord[]> {
+    return [...this.documents.values()].filter((document) => document.status === status);
+  }
+
   async deleteById(documentId: string): Promise<DocumentRecord | undefined> {
     const document = this.documents.get(documentId);
     if (document) this.documents.delete(documentId);
@@ -71,11 +78,20 @@ export class InMemoryDocumentRepository implements DocumentRepository {
   }
 
   async processWebhook(payload: WebhookPayload): Promise<WebhookProcessingResult> {
+    return this.processStatusUpdate(payload);
+  }
+
+  async processReconciliation(payload: WebhookData): Promise<WebhookProcessingResult> {
+    return this.processStatusUpdate(payload);
+  }
+
+  private async processStatusUpdate(payload: WebhookData): Promise<WebhookProcessingResult> {
     const document = this.documents.get(payload.documentId);
     if (!document) return "not_found";
 
     const eventKey = `${payload.documentId}:${payload.status}`;
     if (this.processedEvents.has(eventKey)) return "duplicate";
+    if (document.status !== "sent") return "invalid_transition";
 
     this.processedEvents.add(eventKey);
     this.documents.set(payload.documentId, {

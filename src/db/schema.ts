@@ -1,5 +1,6 @@
 import {
   boolean,
+  integer,
   jsonb,
   pgEnum,
   pgTable,
@@ -55,6 +56,17 @@ export const integrationIncidents = pgTable("integration_incidents", {
   documentId: uuid("document_id"),
   detail: text("detail").notNull(),
   occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const webhookDeliveries = pgTable("webhook_deliveries", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  documentId: uuid("document_id").notNull(),
+  callbackUrl: text("callback_url").notNull(),
+  status: webhookStatusEnum("status").notNull(),
+  delivered: boolean("delivered").notNull(),
+  attempts: integer("attempts").notNull(),
+  error: text("error"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export type Document = typeof documents.$inferSelect;

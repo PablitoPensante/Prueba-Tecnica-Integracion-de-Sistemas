@@ -15,6 +15,7 @@ const envSchema = z.object({
   HTTP_TIMEOUT_MS: z.coerce.number().int().positive().default(3000),
   WEBHOOK_MAX_ATTEMPTS: z.coerce.number().int().min(3).default(3),
   WEBHOOK_BASE_DELAY_MS: z.coerce.number().int().positive().default(200),
+  RECONCILIATION_INTERVAL_MS: z.coerce.number().int().positive().default(5000),
 });
 
 export const env = envSchema.parse(process.env);

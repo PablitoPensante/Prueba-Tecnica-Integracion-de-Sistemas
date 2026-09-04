@@ -1,6 +1,7 @@
 import express from "express";
 import { resolve } from "node:path";
 import { env } from "../config/env.js";
+import { db } from "../db/client.js";
 import { errorHandler, notFoundHandler } from "../shared/http.js";
 import { createDocumentsRouter } from "./routes/documents.js";
 import { FetchWebhookDelivery, type WebhookDelivery } from "./webhook-delivery.js";
@@ -9,10 +10,12 @@ import {
   FileSigningRequestStore,
   type SigningRequestStore,
 } from "./signing-request-store.js";
+import { DrizzleDeliveryAuditRepository, InMemoryDeliveryAuditRepository, type DeliveryAuditRepository } from "./delivery-audit-repository.js";
 
 interface SystemBDependencies {
   signingRequestStore?: SigningRequestStore;
   webhookDelivery?: WebhookDelivery;
+  deliveryAuditRepository?: DeliveryAuditRepository;
 }
 
 export function createSystemBApp(dependencies: SystemBDependencies = {}) {
@@ -22,12 +25,16 @@ export function createSystemBApp(dependencies: SystemBDependencies = {}) {
       ? new InMemorySigningRequestStore()
       : new FileSigningRequestStore(resolve(process.cwd(), "data/system-b-requests.json")));
   const webhookDelivery = dependencies.webhookDelivery ?? new FetchWebhookDelivery({ hmacSecret: env.HMAC_SECRET, timeoutMs: env.HTTP_TIMEOUT_MS, maxAttempts: env.WEBHOOK_MAX_ATTEMPTS, baseDelayMs: env.WEBHOOK_BASE_DELAY_MS });
+  const deliveryAuditRepository = dependencies.deliveryAuditRepository ??
+    (env.NODE_ENV === "test"
+      ? new InMemoryDeliveryAuditRepository()
+      : new DrizzleDeliveryAuditRepository(db));
 
   app.use(express.json());
   app.get("/health", (_request, response) => {
     response.json({ system: "B", status: "ok" });
   });
-  app.use("/documents", createDocumentsRouter(signingRequestStore, webhookDelivery));
+  app.use("/documents", createDocumentsRouter(signingRequestStore, webhookDelivery, deliveryAuditRepository));
   app.use("/assets", express.static(resolve(process.cwd(), "frontend/shared")));
   app.use(express.static(resolve(process.cwd(), "frontend/system-b")));
 

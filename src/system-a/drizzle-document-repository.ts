@@ -1,6 +1,6 @@
 import { and, eq } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
-import type { CreateDocumentInput, WebhookPayload } from "../shared/contracts.js";
+import type { CreateDocumentInput, WebhookData, WebhookPayload } from "../shared/contracts.js";
 import * as schema from "../db/schema.js";
 import {
   type DocumentRecord,
@@ -33,6 +33,13 @@ export class DrizzleDocumentRepository implements DocumentRepository {
     return document;
   }
 
+  async findByStatus(status: DocumentRecord["status"]): Promise<DocumentRecord[]> {
+    return this.database
+      .select()
+      .from(schema.documents)
+      .where(eq(schema.documents.status, status));
+  }
+
   async deleteById(documentId: string): Promise<DocumentRecord | undefined> {
     return this.database.transaction(async (transaction) => {
       const [document] = await transaction
@@ -61,14 +68,24 @@ export class DrizzleDocumentRepository implements DocumentRepository {
   }
 
   async processWebhook(payload: WebhookPayload): Promise<WebhookProcessingResult> {
+    return this.processStatusUpdate(payload);
+  }
+
+  async processReconciliation(payload: WebhookData): Promise<WebhookProcessingResult> {
+    return this.processStatusUpdate(payload);
+  }
+
+  private async processStatusUpdate(payload: WebhookData): Promise<WebhookProcessingResult> {
     return this.database.transaction(async (transaction) => {
       const [document] = await transaction
-        .select({ id: schema.documents.id })
+        .select({ id: schema.documents.id, status: schema.documents.status })
         .from(schema.documents)
         .where(eq(schema.documents.id, payload.documentId))
         .limit(1);
 
       if (!document) return "not_found";
+      if (document.status === payload.status) return "duplicate";
+      if (document.status !== "sent") return "invalid_transition";
 
       const insertedEvents = await transaction
         .insert(schema.webhookEvents)

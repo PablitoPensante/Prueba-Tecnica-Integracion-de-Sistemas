@@ -2,8 +2,9 @@ import { Router } from "express";
 import { decideDocumentSchema, submitDocumentSchema } from "../../shared/contracts.js";
 import type { SigningRequestStore } from "../signing-request-store.js";
 import type { WebhookDelivery } from "../webhook-delivery.js";
+import type { DeliveryAuditRepository } from "../delivery-audit-repository.js";
 
-export function createDocumentsRouter(store: SigningRequestStore, delivery: WebhookDelivery) {
+export function createDocumentsRouter(store: SigningRequestStore, delivery: WebhookDelivery, audit: DeliveryAuditRepository) {
   const router = Router();
 
   router.get("/", (_request, response) => {
@@ -46,7 +47,7 @@ export function createDocumentsRouter(store: SigningRequestStore, delivery: Webh
     }
     response.sendStatus(204);
   });
-  router.post("/:documentId/decision", async (request, response) => { const current = store.findByDocumentId(request.params.documentId); if (!current) { response.status(404).json({ error: "Document not found" }); return; } if (current.status !== "pending") { response.status(409).json({ error: "Document already decided" }); return; } const input = decideDocumentSchema.parse(request.body); const decided = store.decide(current.documentId, input); if (!decided?.decidedAt || decided.status === "pending") throw new Error("Decision could not be persisted"); const result = await delivery.deliver(decided.callbackUrl, { documentId: decided.documentId, status: decided.status, ...(decided.reason ? { reason: decided.reason } : {}), timestamp: decided.decidedAt.toISOString() }); store.recordDelivery(decided.documentId, result); response.status(result.delivered ? 200 : 202).json({ documentId: decided.documentId, status: decided.status, webhook: result }); });
+  router.post("/:documentId/decision", async (request, response) => { const current = store.findByDocumentId(request.params.documentId); if (!current) { response.status(404).json({ error: "Document not found" }); return; } if (current.status !== "pending") { response.status(409).json({ error: "Document already decided" }); return; } const input = decideDocumentSchema.parse(request.body); const decided = store.decide(current.documentId, input); if (!decided?.decidedAt || decided.status === "pending") throw new Error("Decision could not be persisted"); const result = await delivery.deliver(decided.callbackUrl, { documentId: decided.documentId, status: decided.status, ...(decided.reason ? { reason: decided.reason } : {}), timestamp: decided.decidedAt.toISOString() }); store.recordDelivery(decided.documentId, result); await audit.record({ documentId: decided.documentId, callbackUrl: decided.callbackUrl, status: decided.status, delivered: result.delivered, attempts: result.attempts, ...(result.error ? { error: result.error } : {}) }); response.status(result.delivered ? 200 : 202).json({ documentId: decided.documentId, status: decided.status, webhook: result }); });
 
   return router;
 }

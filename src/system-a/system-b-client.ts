@@ -5,6 +5,7 @@ export interface RemoteDocumentStatus {
   documentId: string;
   status: "pending" | "approved" | "rejected";
   reason?: string;
+  timestamp?: string;
 }
 
 export interface SystemBClient {

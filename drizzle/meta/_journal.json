@@ -15,6 +15,13 @@
       "when": 1788387085151,
       "tag": "0001_sudden_invisible_woman",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788484126303,
+      "tag": "0002_tricky_morlocks",
+      "breakpoints": true
     }
   ]
 }

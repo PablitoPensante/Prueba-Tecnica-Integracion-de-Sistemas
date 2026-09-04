@@ -1,8 +1,9 @@
 import { randomUUID } from "node:crypto";
 import request from "supertest";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { createSystemBApp } from "../../src/system-b/app.js";
 import { InMemorySigningRequestStore } from "../../src/system-b/signing-request-store.js";
+import { InMemoryDeliveryAuditRepository } from "../../src/system-b/delivery-audit-repository.js";
 
 function validSubmission(documentId: string = randomUUID()) {
   return {
@@ -74,5 +75,25 @@ describe("DELETE /documents/:documentId in System B", () => {
     await request(app).post("/documents").send(input).expect(202);
     await request(app).delete(`/documents/${input.documentId}`).expect(204);
     expect(store.findByDocumentId(input.documentId)).toBeUndefined();
+  });
+});
+
+describe("POST /documents/:documentId/decision in System B", () => {
+  it("persists a failed webhook delivery for auditing", async () => {
+    const store = new InMemorySigningRequestStore();
+    const audit = new InMemoryDeliveryAuditRepository();
+    const webhookDelivery = { deliver: vi.fn().mockResolvedValue({ delivered: false, attempts: 3, error: "timeout" }) };
+    const app = createSystemBApp({ signingRequestStore: store, webhookDelivery, deliveryAuditRepository: audit });
+    const input = validSubmission();
+    await request(app).post("/documents").send(input).expect(202);
+
+    await request(app).post(`/documents/${input.documentId}/decision`).send({ status: "approved" }).expect(202);
+
+    expect(audit.entries).toEqual([expect.objectContaining({
+      documentId: input.documentId,
+      delivered: false,
+      attempts: 3,
+      error: "timeout",
+    })]);
   });
 });
