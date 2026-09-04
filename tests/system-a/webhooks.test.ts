@@ -20,6 +20,7 @@ async function createSentDocument(
   app: ReturnType<typeof createSystemAApp>,
 ) {
   const response = await request(app).post("/documents").send({
+    subject: "Contrato de servicios",
     thirdPartyEmail: "reviewer@example.com",
     fileUrl: "https://files.example.com/contract.pdf",
   });

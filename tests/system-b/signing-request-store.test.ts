@@ -8,7 +8,7 @@ describe("FileSigningRequestStore", () => {
   it("persists requests and their deletion between restarts", async () => {
     const directory = await mkdtemp(join(tmpdir(), "absign-store-"));
     const file = join(directory, "requests.json");
-    const input = { documentId: crypto.randomUUID(), thirdPartyEmail: "reviewer@example.com", fileUrl: "http://localhost/file.pdf", callbackUrl: "http://localhost/webhook" };
+    const input = { documentId: crypto.randomUUID(), subject: "Contrato de servicios", thirdPartyEmail: "reviewer@example.com", fileUrl: "http://localhost/file.pdf", callbackUrl: "http://localhost/webhook" };
     new FileSigningRequestStore(file).create(input);
     const restored = new FileSigningRequestStore(file);
     expect(restored.findByDocumentId(input.documentId)).toMatchObject(input);

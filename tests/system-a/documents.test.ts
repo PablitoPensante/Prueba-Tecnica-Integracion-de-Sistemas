@@ -25,6 +25,7 @@ describe("POST /documents in System A", () => {
 
     const response = await request(app)
       .post("/documents")
+      .field("subject", "Contrato de servicios")
       .field("thirdPartyEmail", "reviewer@example.com")
       .attach("document", Buffer.from("%PDF-1.4 test"), {
         filename: "contract.pdf",
@@ -33,8 +34,9 @@ describe("POST /documents in System A", () => {
       .expect(201);
 
     expect(response.body.fileUrl).toMatch(/^http:\/\/localhost:3000\/uploads\/.+\.pdf$/);
+    expect(response.body.subject).toBe("Contrato de servicios");
     expect(submitDocument).toHaveBeenCalledWith(
-      expect.objectContaining({ fileUrl: response.body.fileUrl }),
+      expect.objectContaining({ subject: "Contrato de servicios", fileUrl: response.body.fileUrl }),
     );
     await request(app).get(new URL(response.body.fileUrl).pathname).expect(200);
     await unlink(resolve(process.cwd(), "uploads", basename(response.body.fileUrl)));
@@ -48,6 +50,7 @@ describe("POST /documents in System A", () => {
     });
     const response = await request(app)
       .post("/documents")
+      .field("subject", "Reporte mensual")
       .field("thirdPartyEmail", "reviewer@example.com")
       .attach("document", Buffer.from("name,value\nitem,10"), {
         filename: "report.csv",
@@ -68,6 +71,7 @@ describe("POST /documents in System A", () => {
     });
 
     const response = await request(app).post("/documents").send({
+      subject: "Contrato de servicios",
       thirdPartyEmail: "reviewer@example.com",
       fileUrl: "https://files.example.com/contract.pdf",
     });
@@ -90,6 +94,7 @@ describe("POST /documents in System A", () => {
     });
 
     const response = await request(app).post("/documents").send({
+      subject: "Contrato de servicios",
       thirdPartyEmail: "reviewer@example.com",
       fileUrl: "https://files.example.com/contract.pdf",
     });
@@ -108,7 +113,7 @@ describe("POST /documents in System A", () => {
 describe("DELETE /documents/:documentId in System A", () => {
   it("deletes an existing document", async () => {
     const repository = new InMemoryDocumentRepository();
-    const document = await repository.create({ thirdPartyEmail: "reviewer@example.com", fileUrl: "https://example.com/document.pdf" });
+    const document = await repository.create({ subject: "Contrato de servicios", thirdPartyEmail: "reviewer@example.com", fileUrl: "https://example.com/document.pdf" });
     await request(createSystemAApp({ repository })).delete(`/documents/${document.id}`).expect(204);
     expect(await repository.findById(document.id)).toBeUndefined();
   });

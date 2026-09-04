@@ -1,0 +1,1 @@
+ALTER TABLE "documents" ADD COLUMN "subject" text DEFAULT 'Sin asunto' NOT NULL;

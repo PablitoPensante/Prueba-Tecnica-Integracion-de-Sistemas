@@ -1,12 +1,14 @@
 import { z } from "zod";
 
 export const createDocumentSchema = z.object({
+  subject: z.string().trim().min(1).max(150),
   thirdPartyEmail: z.email(),
   fileUrl: z.url(),
 });
 
 export const submitDocumentSchema = z.object({
   documentId: z.uuid(),
+  subject: z.string().trim().min(1).max(150),
   thirdPartyEmail: z.email(),
   fileUrl: z.url(),
   callbackUrl: z.url(),

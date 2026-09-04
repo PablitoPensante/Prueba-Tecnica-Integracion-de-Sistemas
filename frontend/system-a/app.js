@@ -1,1 +1,74 @@
-const key="absign-system-a-documents",list=document.querySelector("#list"),notice=document.querySelector("#notice");let documents=JSON.parse(localStorage.getItem(key)||"[]");const esc=v=>{const n=document.createElement("span");n.textContent=String(v);return n.innerHTML},save=()=>localStorage.setItem(key,JSON.stringify(documents));function render(){document.querySelector("#total").textContent=documents.length;document.querySelector("#active").textContent=documents.filter(d=>["pending","sent"].includes(d.status)).length;document.querySelector("#resolved").textContent=documents.filter(d=>["approved","rejected"].includes(d.status)).length;list.innerHTML=documents.length?documents.map(d=>`<div class="item"><div><strong>${esc(d.thirdPartyEmail)}</strong><small>${esc(d.id)}</small><small><a href="${esc(d.fileUrl)}" target="_blank" rel="noreferrer">Abrir documento</a>${d.reason?` · ${esc(d.reason)}`:""}</small></div><div><span class="badge ${d.status}">${d.status}</span><div class="actions"><button class="danger" data-delete="${d.id}">Eliminar</button></div></div></div>`).join(""):`<div class="empty">Aún no hay documentos enviados.</div>`}async function refresh(){documents=await Promise.all(documents.map(async d=>{try{const r=await fetch(`/documents/${d.id}`);return r.ok?await r.json():d}catch{return d}}));save();render()}list.addEventListener("click",async e=>{const b=e.target.closest("[data-delete]");if(!b||!confirm("¿Eliminar este documento y su archivo?"))return;const id=b.dataset.delete,r=await fetch(`/documents/${id}`,{method:"DELETE"});if(r.ok||r.status===404){documents=documents.filter(d=>d.id!==id);save();render()}});document.querySelector("#form").addEventListener("submit",async event=>{event.preventDefault();const button=document.querySelector("#submit"),data=new FormData(event.target);button.disabled=true;notice.innerHTML="";try{const response=await fetch("/documents",{method:"POST",body:data}),result=await response.json();if(!response.ok)throw Error(result.error||"No se pudo enviar");documents.unshift(result);save();render();event.target.reset();notice.className="notice";notice.textContent="Documento subido y enviado correctamente."}catch(error){notice.className="notice error";notice.textContent=error.message}finally{button.disabled=false}});render();refresh();setInterval(refresh,8000);
+const key = "absign-system-a-documents";
+const list = document.querySelector("#list");
+const notice = document.querySelector("#notice");
+let documents = JSON.parse(localStorage.getItem(key) || "[]");
+
+const esc = (value) => {
+  const node = document.createElement("span");
+  node.textContent = String(value);
+  return node.innerHTML;
+};
+const save = () => localStorage.setItem(key, JSON.stringify(documents));
+const subjectOf = (document) => document.subject?.trim() || "Sin asunto";
+
+function render() {
+  document.querySelector("#total").textContent = documents.length;
+  document.querySelector("#active").textContent = documents.filter((item) => ["pending", "sent"].includes(item.status)).length;
+  document.querySelector("#resolved").textContent = documents.filter((item) => ["approved", "rejected"].includes(item.status)).length;
+  list.innerHTML = documents.length
+    ? documents.map((item) => `<div class="item"><div><strong>${esc(subjectOf(item))}</strong><small>${esc(item.thirdPartyEmail)}</small><small>${esc(item.id)}</small><small><a href="${esc(item.fileUrl)}" target="_blank" rel="noreferrer">Abrir documento</a>${item.reason ? ` · ${esc(item.reason)}` : ""}</small></div><div><span class="badge ${item.status}">${item.status}</span><div class="actions"><button class="danger" data-delete="${item.id}">Eliminar</button></div></div></div>`).join("")
+    : `<div class="empty">Aún no hay documentos enviados.</div>`;
+}
+
+async function refresh() {
+  documents = await Promise.all(documents.map(async (item) => {
+    try {
+      const response = await fetch(`/documents/${item.id}`);
+      return response.ok ? await response.json() : item;
+    } catch {
+      return item;
+    }
+  }));
+  save();
+  render();
+}
+
+list.addEventListener("click", async (event) => {
+  const button = event.target.closest("[data-delete]");
+  if (!button || !confirm("¿Eliminar este documento y su archivo?")) return;
+  const id = button.dataset.delete;
+  const response = await fetch(`/documents/${id}`, { method: "DELETE" });
+  if (response.ok || response.status === 404) {
+    documents = documents.filter((item) => item.id !== id);
+    save();
+    render();
+  }
+});
+
+document.querySelector("#form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const button = document.querySelector("#submit");
+  const data = new FormData(event.target);
+  button.disabled = true;
+  notice.innerHTML = "";
+  try {
+    const response = await fetch("/documents", { method: "POST", body: data });
+    const result = await response.json();
+    if (!response.ok) throw Error(result.error || "No se pudo enviar");
+    documents.unshift(result);
+    save();
+    render();
+    event.target.reset();
+    notice.className = "notice";
+    notice.textContent = "Documento subido y enviado correctamente.";
+  } catch (error) {
+    notice.className = "notice error";
+    notice.textContent = error.message;
+  } finally {
+    button.disabled = false;
+  }
+});
+
+render();
+refresh();
+setInterval(refresh, 8000);

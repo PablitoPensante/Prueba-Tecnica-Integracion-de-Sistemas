@@ -7,6 +7,7 @@ import { InMemorySigningRequestStore } from "../../src/system-b/signing-request-
 function validSubmission(documentId: string = randomUUID()) {
   return {
     documentId,
+    subject: "Contrato de servicios",
     thirdPartyEmail: "reviewer@example.com",
     fileUrl: "https://files.example.com/contract.pdf",
     callbackUrl: "http://localhost:3000/webhooks/absign",
@@ -20,7 +21,7 @@ describe("POST /documents in System B", () => {
     await request(app).post("/documents").send(input).expect(202);
     const response = await request(app).get("/documents").expect(200);
     expect(response.body).toEqual([
-      expect.objectContaining({ documentId: input.documentId, status: "pending" }),
+      expect.objectContaining({ documentId: input.documentId, subject: input.subject, status: "pending" }),
     ]);
   });
 

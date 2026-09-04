@@ -3,6 +3,7 @@ import { FetchSystemBClient } from "../../src/system-a/system-b-client.js";
 
 const submission = {
   documentId: "2f5e0a24-7951-4e09-94d0-52fe7800f77a",
+  subject: "Contrato de servicios",
   thirdPartyEmail: "reviewer@example.com",
   fileUrl: "https://files.example.com/contract.pdf",
   callbackUrl: "http://localhost:3000/webhooks/absign",

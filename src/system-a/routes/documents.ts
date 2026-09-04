@@ -44,6 +44,7 @@ export function createDocumentsRouter(options: DocumentsRouterOptions) {
 
   router.post("/", documentUpload.single("document"), async (request, response) => {
     const input = createDocumentSchema.parse({
+      subject: request.body.subject,
       thirdPartyEmail: request.body.thirdPartyEmail,
       fileUrl: request.file
         ? `${options.publicUrl}/uploads/${request.file.filename}`

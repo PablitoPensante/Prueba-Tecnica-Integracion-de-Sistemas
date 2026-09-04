@@ -8,6 +8,13 @@
       "when": 1788277748652,
       "tag": "0000_open_landau",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1788387085151,
+      "tag": "0001_sudden_invisible_woman",
+      "breakpoints": true
     }
   ]
 }

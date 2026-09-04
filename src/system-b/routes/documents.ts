@@ -9,6 +9,7 @@ export function createDocumentsRouter(store: SigningRequestStore, delivery: Webh
   router.get("/", (_request, response) => {
     response.json(store.findAll().map((item) => ({
       documentId: item.documentId,
+      subject: item.subject ?? "Sin asunto",
       thirdPartyEmail: item.thirdPartyEmail,
       fileUrl: item.fileUrl,
       status: item.status,
