@@ -2,6 +2,7 @@ const key = "absign-system-a-documents";
 const list = document.querySelector("#list");
 const notice = document.querySelector("#notice");
 let documents = JSON.parse(localStorage.getItem(key) || "[]");
+const socket = io({ autoConnect: false });
 
 const esc = (value) => {
   const node = document.createElement("span");
@@ -10,6 +11,15 @@ const esc = (value) => {
 };
 const save = () => localStorage.setItem(key, JSON.stringify(documents));
 const subjectOf = (document) => document.subject?.trim() || "Sin asunto";
+const subscribeDocuments = () => documents.forEach((document) => socket.emit("document:subscribe", document.id));
+
+function applyStatusChange(updated) {
+  const index = documents.findIndex((document) => document.id === updated.id);
+  if (index === -1) return;
+  documents[index] = updated;
+  save();
+  render();
+}
 
 function render() {
   document.querySelector("#total").textContent = documents.length;
@@ -56,6 +66,7 @@ document.querySelector("#form").addEventListener("submit", async (event) => {
     const result = await response.json();
     if (!response.ok) throw Error(result.error || "No se pudo enviar");
     documents.unshift(result);
+    socket.emit("document:subscribe", result.id);
     save();
     render();
     event.target.reset();
@@ -70,5 +81,7 @@ document.querySelector("#form").addEventListener("submit", async (event) => {
 });
 
 render();
-refresh();
-setInterval(refresh, 8000);
+refresh().then(subscribeDocuments);
+socket.off("connect").on("connect", subscribeDocuments);
+socket.off("document:statusChanged").on("document:statusChanged", applyStatusChange);
+socket.connect();

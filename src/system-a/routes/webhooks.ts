@@ -1,11 +1,13 @@
 import { Router } from "express";
 import { webhookPayloadSchema } from "../../shared/contracts.js";
 import { verifyWebhookSignature } from "../../shared/webhook-signature.js";
+import type { IntegrationEvents } from "../../shared/integration-events.js";
 import type { DocumentRepository } from "../document-repository.js";
 
 interface WebhooksRouterOptions {
   repository: DocumentRepository;
   hmacSecret: string;
+  events: IntegrationEvents;
 }
 
 export function createWebhooksRouter(options: WebhooksRouterOptions) {
@@ -21,6 +23,11 @@ export function createWebhooksRouter(options: WebhooksRouterOptions) {
         documentId: payload.documentId,
         detail: "Webhook signature did not match the shared secret",
       });
+      options.events.integrationIncident({
+        type: "invalid_webhook_signature",
+        documentId: payload.documentId,
+        detail: "Webhook signature did not match the shared secret",
+      });
       response.status(401).json({ error: "Invalid webhook signature" });
       return;
     }
@@ -30,6 +37,11 @@ export function createWebhooksRouter(options: WebhooksRouterOptions) {
     if (result === "not_found") {
       response.status(404).json({ error: "Document not found" });
       return;
+    }
+
+    if (result === "processed") {
+      const document = await options.repository.findById(payload.documentId);
+      if (document) options.events.documentStatusChanged(document);
     }
 
     response.status(200).json({

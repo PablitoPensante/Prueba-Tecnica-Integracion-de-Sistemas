@@ -12,6 +12,7 @@ const envSchema = z.object({
     .min(1)
     .default("postgresql://postgres:postgres@localhost:5432/absign"),
   HMAC_SECRET: z.string().min(16).default("development-secret-change-me"),
+  ADMIN_SOCKET_TOKEN: z.string().min(16).default("development-admin-token"),
   HTTP_TIMEOUT_MS: z.coerce.number().int().positive().default(3000),
   WEBHOOK_MAX_ATTEMPTS: z.coerce.number().int().min(3).default(3),
   WEBHOOK_BASE_DELAY_MS: z.coerce.number().int().positive().default(200),

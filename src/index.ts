@@ -7,26 +7,21 @@ import { DrizzleDocumentRepository } from "./system-a/drizzle-document-repositor
 import { DocumentReconciler } from "./system-a/reconciliation.js";
 import { FetchSystemBClient } from "./system-a/system-b-client.js";
 import { createSystemBApp } from "./system-b/app.js";
+import { configureSocketRooms, SocketIntegrationEvents } from "./realtime/socket-integration-events.js";
 
 const documentRepository = new DrizzleDocumentRepository(db);
 const systemBClient = new FetchSystemBClient({ baseUrl: env.SYSTEM_B_URL, timeoutMs: env.HTTP_TIMEOUT_MS });
-const systemAHttpServer = createServer(createSystemAApp({ repository: documentRepository, systemBClient }));
+let systemAApp: ReturnType<typeof createSystemAApp>;
+const systemAHttpServer = createServer((request, response) => systemAApp(request, response));
 const systemBHttpServer = createServer(createSystemBApp());
 
 // Socket.IO belongs to System A because that is where the UI observes state changes.
 const io = new SocketIOServer(systemAHttpServer, { cors: { origin: "*" } });
+configureSocketRooms(io, env.ADMIN_SOCKET_TOKEN);
+const events = new SocketIntegrationEvents(io);
+systemAApp = createSystemAApp({ repository: documentRepository, systemBClient, events });
 
-io.on("connection", (socket) => {
-  socket.on("document:subscribe", async (documentId: string) => {
-    await socket.join(`document:${documentId}`);
-  });
-
-  socket.on("admin:subscribe", () => {
-    socket.join("admins");
-  });
-});
-
-const reconciler = new DocumentReconciler(documentRepository, systemBClient);
+const reconciler = new DocumentReconciler(documentRepository, systemBClient, events);
 let reconciliationRunning = false;
 const reconciliationTimer = setInterval(() => {
   if (reconciliationRunning) return;

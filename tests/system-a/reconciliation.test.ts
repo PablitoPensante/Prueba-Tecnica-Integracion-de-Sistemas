@@ -21,11 +21,12 @@ describe("DocumentReconciler", () => {
   it("recovers a decision when webhook delivery was interrupted", async () => {
     const repository = new InMemoryDocumentRepository();
     const document = await sentDocument(repository);
+    const events = { documentStatusChanged: vi.fn(), integrationIncident: vi.fn() };
     const reconciler = new DocumentReconciler(repository, client(vi.fn().mockResolvedValue({
       documentId: document.id,
       status: "approved",
       timestamp: "2026-09-03T12:00:00.000Z",
-    })));
+    })), events);
 
     await reconciler.runOnce();
 
@@ -34,6 +35,8 @@ describe("DocumentReconciler", () => {
       type: "webhook_delivery_recovered",
       documentId: document.id,
     }));
+    expect(events.documentStatusChanged).toHaveBeenCalledWith(expect.objectContaining({ id: document.id, status: "approved" }));
+    expect(events.integrationIncident).toHaveBeenCalledWith(expect.objectContaining({ type: "webhook_delivery_recovered" }));
   });
 
   it("is idempotent and never regresses a resolved document", async () => {

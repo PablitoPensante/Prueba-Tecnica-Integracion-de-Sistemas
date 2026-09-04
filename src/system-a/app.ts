@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import { env } from "../config/env.js";
 import { db } from "../db/client.js";
 import { errorHandler, notFoundHandler } from "../shared/http.js";
+import { noopIntegrationEvents, type IntegrationEvents } from "../shared/integration-events.js";
 import type { DocumentRepository } from "./document-repository.js";
 import { DrizzleDocumentRepository } from "./drizzle-document-repository.js";
 import { createDocumentsRouter } from "./routes/documents.js";
@@ -15,6 +16,7 @@ interface SystemADependencies {
   systemBClient?: SystemBClient;
   callbackUrl?: string;
   hmacSecret?: string;
+  events?: IntegrationEvents;
 }
 
 export function createSystemAApp(dependencies: SystemADependencies = {}) {
@@ -39,6 +41,7 @@ export function createSystemAApp(dependencies: SystemADependencies = {}) {
       callbackUrl:
         dependencies.callbackUrl ?? `${env.SYSTEM_A_URL}/webhooks/absign`,
       publicUrl: env.SYSTEM_A_URL,
+      events: dependencies.events ?? noopIntegrationEvents,
     }),
   );
   app.use("/uploads", express.static(uploadsDirectory));
@@ -47,6 +50,7 @@ export function createSystemAApp(dependencies: SystemADependencies = {}) {
     createWebhooksRouter({
       repository,
       hmacSecret: dependencies.hmacSecret ?? env.HMAC_SECRET,
+      events: dependencies.events ?? noopIntegrationEvents,
     }),
   );
 

@@ -39,12 +39,15 @@ function approvedWebhook(documentId: string): WebhookData {
 describe("POST /webhooks/absign", () => {
   it("processes a valid approved webhook and updates the document", async () => {
     const repository = new InMemoryDocumentRepository();
+    const events = { documentStatusChanged: vi.fn(), integrationIncident: vi.fn() };
     const app = createSystemAApp({
       repository,
       systemBClient: successfulSystemBClient(),
       hmacSecret,
+      events,
     });
     const documentId = await createSentDocument(repository, app);
+    events.documentStatusChanged.mockClear();
     const payload = createSignedWebhook(approvedWebhook(documentId), hmacSecret);
 
     const response = await request(app)
@@ -55,14 +58,17 @@ describe("POST /webhooks/absign", () => {
     expect(response.status).toBe(200);
     expect(response.body).toEqual({ processed: true, duplicate: false });
     expect((await repository.findById(documentId))?.status).toBe("approved");
+    expect(events.documentStatusChanged).toHaveBeenCalledWith(expect.objectContaining({ id: documentId, status: "approved" }));
   });
 
   it("rejects an invalid signature without changing the document", async () => {
     const repository = new InMemoryDocumentRepository();
+    const events = { documentStatusChanged: vi.fn(), integrationIncident: vi.fn() };
     const app = createSystemAApp({
       repository,
       systemBClient: successfulSystemBClient(),
       hmacSecret,
+      events,
     });
     const documentId = await createSentDocument(repository, app);
     const payload = createSignedWebhook(approvedWebhook(documentId), hmacSecret);
@@ -75,6 +81,7 @@ describe("POST /webhooks/absign", () => {
     expect(response.status).toBe(401);
     expect((await repository.findById(documentId))?.status).toBe("sent");
     expect(repository.incidents.at(-1)?.type).toBe("invalid_webhook_signature");
+    expect(events.integrationIncident).toHaveBeenCalledWith(expect.objectContaining({ type: "invalid_webhook_signature", documentId }));
   });
 
   it("treats the same document and status as an idempotent duplicate", async () => {

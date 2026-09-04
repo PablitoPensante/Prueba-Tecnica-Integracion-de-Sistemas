@@ -43,15 +43,15 @@ tomadas.
 - [x] Incorporar un modal de rechazo con motivo obligatorio.
 - [x] Incorporar un tema azul claro y oscuro persistente.
 - [x] Permitir eliminar registros desde ambos frontends.
-- [ ] Emitir `document:statusChanged` al room del documento mediante Socket.IO.
-- [ ] Actualizar el frontend de Sistema A en vivo, sin polling.
-- [ ] Emitir `integration:incident` para interrupciones críticas.
+- [x] Emitir `document:statusChanged` al room del documento mediante Socket.IO.
+- [x] Actualizar el frontend de Sistema A en vivo, sin polling.
+- [x] Emitir `integration:incident` a un room administrativo protegido por token.
 
 ### Pruebas y entrega final
 
 - [x] Cubrir flujo aprobado, firma inválida e idempotencia.
 - [x] Cubrir carga multipart, reintentos, persistencia y eliminación.
-- [x] Mantener 27 pruebas automatizadas aprobadas.
+- [x] Mantener 29 pruebas automatizadas aprobadas.
 - [ ] Añadir pruebas de integración contra PostgreSQL real.
 - [ ] Probar el flujo completo A → B → webhook → PostgreSQL → Socket.IO.
 - [ ] Crear el comando `npm run demo` sin intervención manual.

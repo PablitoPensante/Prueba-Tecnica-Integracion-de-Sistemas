@@ -1,11 +1,13 @@
 import type { WebhookData } from "../shared/contracts.js";
 import type { DocumentRepository } from "./document-repository.js";
 import type { SystemBClient } from "./system-b-client.js";
+import { noopIntegrationEvents, type IntegrationEvents } from "../shared/integration-events.js";
 
 export class DocumentReconciler {
   constructor(
     private readonly repository: DocumentRepository,
     private readonly systemBClient: SystemBClient,
+    private readonly events: IntegrationEvents = noopIntegrationEvents,
   ) {}
 
   async runOnce(): Promise<void> {
@@ -31,9 +33,21 @@ export class DocumentReconciler {
           documentId,
           detail: `Recovered ${remote.status} status through reconciliation`,
         });
+        const recovered = await this.repository.findById(documentId);
+        if (recovered) this.events.documentStatusChanged(recovered);
+        this.events.integrationIncident({
+          type: "webhook_delivery_recovered",
+          documentId,
+          detail: `Recovered ${remote.status} status through reconciliation`,
+        });
       }
     } catch (error) {
       await this.repository.recordIncident({
+        type: "reconciliation_failed",
+        documentId,
+        detail: error instanceof Error ? error.message : "Unknown reconciliation error",
+      });
+      this.events.integrationIncident({
         type: "reconciliation_failed",
         documentId,
         detail: error instanceof Error ? error.message : "Unknown reconciliation error",

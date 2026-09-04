@@ -2,6 +2,7 @@ import { Router } from "express";
 import { unlink } from "node:fs/promises";
 import { basename, resolve } from "node:path";
 import { createDocumentSchema } from "../../shared/contracts.js";
+import type { IntegrationEvents } from "../../shared/integration-events.js";
 import type { DocumentRepository } from "../document-repository.js";
 import type { SystemBClient } from "../system-b-client.js";
 import { documentUpload } from "../document-upload.js";
@@ -11,6 +12,7 @@ interface DocumentsRouterOptions {
   systemBClient: SystemBClient;
   callbackUrl: string;
   publicUrl: string;
+  events: IntegrationEvents;
 }
 
 export function createDocumentsRouter(options: DocumentsRouterOptions) {
@@ -59,9 +61,15 @@ export function createDocumentsRouter(options: DocumentsRouterOptions) {
         callbackUrl: options.callbackUrl,
       });
       const sentDocument = await options.repository.markSent(document.id, new Date());
+      if (sentDocument) options.events.documentStatusChanged(sentDocument);
       response.status(201).json(sentDocument);
     } catch (error) {
       await options.repository.recordIncident({
+        type: "document_submission_failed",
+        documentId: document.id,
+        detail: error instanceof Error ? error.message : "Unknown submission error",
+      });
+      options.events.integrationIncident({
         type: "document_submission_failed",
         documentId: document.id,
         detail: error instanceof Error ? error.message : "Unknown submission error",
