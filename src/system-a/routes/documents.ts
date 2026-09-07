@@ -45,16 +45,17 @@ export function createDocumentsRouter(options: DocumentsRouterOptions) {
   });
 
   router.post("/", documentUpload.single("document"), async (request, response) => {
-    const input = createDocumentSchema.parse({
-      subject: request.body.subject,
-      thirdPartyEmail: request.body.thirdPartyEmail,
-      fileUrl: request.file
-        ? `${options.publicUrl}/uploads/${request.file.filename}`
-        : request.body.fileUrl,
-    });
-    const document = await options.repository.create(input);
-
+    let document: Awaited<ReturnType<DocumentRepository["create"]>> | undefined;
     try {
+      const input = createDocumentSchema.parse({
+        subject: request.body?.subject,
+        thirdPartyEmail: request.body?.thirdPartyEmail,
+        fileUrl: request.file
+          ? `${options.publicUrl}/uploads/${request.file.filename}`
+          : request.body?.fileUrl,
+      });
+      document = await options.repository.create(input);
+
       await options.systemBClient.submitDocument({
         documentId: document.id,
         ...input,
@@ -64,6 +65,10 @@ export function createDocumentsRouter(options: DocumentsRouterOptions) {
       if (sentDocument) options.events.documentStatusChanged(sentDocument);
       response.status(201).json(sentDocument);
     } catch (error) {
+      if (!document) {
+        await removeUploadedFile(request.file?.filename);
+        throw error;
+      }
       await options.repository.recordIncident({
         type: "document_submission_failed",
         documentId: document.id,
@@ -83,4 +88,13 @@ export function createDocumentsRouter(options: DocumentsRouterOptions) {
   });
 
   return router;
+}
+
+async function removeUploadedFile(filename: string | undefined): Promise<void> {
+  if (!filename) return;
+  try {
+    await unlink(resolve(process.cwd(), "uploads", basename(filename)));
+  } catch {
+    // Nothing else can be recovered when a temporary upload is already absent.
+  }
 }

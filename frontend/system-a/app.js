@@ -11,7 +11,10 @@ const esc = (value) => {
 };
 const save = () => localStorage.setItem(key, JSON.stringify(documents));
 const subjectOf = (document) => document.subject?.trim() || "Sin asunto";
-const subscribeDocuments = () => documents.forEach((document) => socket.emit("document:subscribe", document.id));
+const subscribeDocuments = () =>
+  documents.forEach((document) =>
+    socket.emit("document:subscribe", document.id),
+  );
 
 function applyStatusChange(updated) {
   const index = documents.findIndex((document) => document.id === updated.id);
@@ -23,22 +26,46 @@ function applyStatusChange(updated) {
 
 function render() {
   document.querySelector("#total").textContent = documents.length;
-  document.querySelector("#active").textContent = documents.filter((item) => ["pending", "sent"].includes(item.status)).length;
-  document.querySelector("#resolved").textContent = documents.filter((item) => ["approved", "rejected"].includes(item.status)).length;
+  document.querySelector("#active").textContent = documents.filter((item) =>
+    ["pending", "sent"].includes(item.status),
+  ).length;
+  document.querySelector("#resolved").textContent = documents.filter((item) =>
+    ["approved", "rejected"].includes(item.status),
+  ).length;
   list.innerHTML = documents.length
-    ? documents.map((item) => `<div class="item"><div><strong>${esc(subjectOf(item))}</strong><small>${esc(item.thirdPartyEmail)}</small><small>${esc(item.id)}</small><small><a href="${esc(item.fileUrl)}" target="_blank" rel="noreferrer">Abrir documento</a>${item.reason ? ` · ${esc(item.reason)}` : ""}</small></div><div><span class="badge ${item.status}">${item.status}</span><div class="actions"><button class="danger" data-delete="${item.id}">Eliminar</button></div></div></div>`).join("")
+    ? documents
+        .map(
+          (item) =>
+            `<div class="item">
+              <div>
+                <strong>${esc(subjectOf(item))}</strong>
+                <small>${esc(item.thirdPartyEmail)}</small>
+                <small>${esc(item.id)}</small>
+                <small><a href="${esc(item.fileUrl)}" target="_blank" rel="noreferrer">Abrir documento</a>${item.reason ? ` · ${esc(item.reason)}` : ""}</small>
+              </div>
+              <div>
+                <span class="badge ${item.status}">${item.status}</span>
+                <div class="actions">
+                  <button class="danger" data-delete="${item.id}">Eliminar</button>
+                </div>
+              </div>
+            </div>`,
+        )
+        .join("")
     : `<div class="empty">Aún no hay documentos enviados.</div>`;
 }
 
 async function refresh() {
-  documents = await Promise.all(documents.map(async (item) => {
-    try {
-      const response = await fetch(`/documents/${item.id}`);
-      return response.ok ? await response.json() : item;
-    } catch {
-      return item;
-    }
-  }));
+  documents = await Promise.all(
+    documents.map(async (item) => {
+      try {
+        const response = await fetch(`/documents/${item.id}`);
+        return response.ok ? await response.json() : item;
+      } catch {
+        return item;
+      }
+    }),
+  );
   save();
   render();
 }
@@ -59,12 +86,24 @@ document.querySelector("#form").addEventListener("submit", async (event) => {
   event.preventDefault();
   const button = document.querySelector("#submit");
   const data = new FormData(event.target);
+  const file = data.get("document");
+  if (file instanceof File && file.size > 10 * 1024 * 1024) {
+    notice.className = "notice error";
+    notice.textContent = "El archivo supera el límite de 10 MB.";
+    return;
+  }
   button.disabled = true;
   notice.innerHTML = "";
   try {
     const response = await fetch("/documents", { method: "POST", body: data });
-    const result = await response.json();
-    if (!response.ok) throw Error(result.error || "No se pudo enviar");
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw Error(
+        result.message ||
+          result.error ||
+          `No se pudo enviar (${response.status})`,
+      );
+    }
     documents.unshift(result);
     socket.emit("document:subscribe", result.id);
     save();
@@ -83,5 +122,7 @@ document.querySelector("#form").addEventListener("submit", async (event) => {
 render();
 refresh().then(subscribeDocuments);
 socket.off("connect").on("connect", subscribeDocuments);
-socket.off("document:statusChanged").on("document:statusChanged", applyStatusChange);
+socket
+  .off("document:statusChanged")
+  .on("document:statusChanged", applyStatusChange);
 socket.connect();

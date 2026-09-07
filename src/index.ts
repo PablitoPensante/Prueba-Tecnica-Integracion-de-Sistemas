@@ -26,7 +26,9 @@ let reconciliationRunning = false;
 const reconciliationTimer = setInterval(() => {
   if (reconciliationRunning) return;
   reconciliationRunning = true;
-  void reconciler.runOnce().finally(() => { reconciliationRunning = false; });
+  void reconciler.runOnce()
+    .catch((error: unknown) => console.error("Reconciliation failed:", error))
+    .finally(() => { reconciliationRunning = false; });
 }, env.RECONCILIATION_INTERVAL_MS);
 reconciliationTimer.unref();
 

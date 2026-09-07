@@ -41,6 +41,23 @@ describe.runIf(enabled)("complete integration with PostgreSQL", () => {
 
   afterAll(async () => pool.end());
 
+  it("serializes conflicting decisions and records only the winning event", async () => {
+    const repository = new DrizzleDocumentRepository(db);
+    const document = await repository.create({ subject: "Concurrent decisions", thirdPartyEmail: "reviewer@example.com", fileUrl: "https://example.com/document.pdf" });
+    documentIds.push(document.id);
+    await repository.markSent(document.id, new Date());
+    const timestamp = new Date().toISOString();
+    const results = await Promise.all([
+      repository.processWebhook(createSignedWebhook({ documentId: document.id, status: "approved", timestamp }, hmacSecret)),
+      repository.processReconciliation({ documentId: document.id, status: "rejected", reason: "Conflicting decision", timestamp }),
+    ]);
+    expect(results.filter((result) => result === "processed")).toHaveLength(1);
+    expect(results.filter((result) => result === "invalid_transition")).toHaveLength(1);
+    const audit = await db.select().from(schema.webhookEvents).where(eq(schema.webhookEvents.documentId, document.id));
+    expect(audit).toHaveLength(1);
+    expect((await repository.findById(document.id))?.status).toBe(audit[0]?.status);
+  });
+
   it("covers A to B, webhook, PostgreSQL, Socket.IO, duplicate, invalid signature, timeout and recovery", async () => {
     const repository = new DrizzleDocumentRepository(db);
     const store = new InMemorySigningRequestStore();

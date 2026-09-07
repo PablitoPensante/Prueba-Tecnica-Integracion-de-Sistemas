@@ -1,6 +1,19 @@
 import type { DecideDocumentInput, SubmitDocumentInput } from "../shared/contracts.js";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { submitDocumentSchema } from "../shared/contracts.js";
+import { mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
+import { randomUUID } from "node:crypto";
+import { z } from "zod";
+
+const savedRequestsSchema = z.array(submitDocumentSchema.extend({
+  status: z.enum(["pending", "approved", "rejected"]),
+  receivedAt: z.iso.datetime().transform((value) => new Date(value)),
+  decidedAt: z.iso.datetime().transform((value) => new Date(value)).nullable(),
+  reason: z.string().nullable(),
+  deliveryStatus: z.enum(["not_attempted", "delivered", "failed"]),
+  deliveryAttempts: z.number().int().nonnegative(),
+  lastDeliveryError: z.string().nullable(),
+}));
 
 export interface SigningRequest extends SubmitDocumentInput {
   status: "pending" | "approved" | "rejected";
@@ -18,7 +31,7 @@ export interface SigningRequestStore {
 }
 
 export class InMemorySigningRequestStore implements SigningRequestStore {
-  private readonly requests = new Map<string, SigningRequest>();
+  protected readonly requests = new Map<string, SigningRequest>();
 
   create(input: SubmitDocumentInput): SigningRequest | undefined {
     if (this.requests.has(input.documentId)) {
@@ -54,15 +67,27 @@ export class FileSigningRequestStore extends InMemorySigningRequestStore {
     super();
     mkdirSync(dirname(filePath), { recursive: true });
     try {
-      const saved = JSON.parse(readFileSync(filePath, "utf8")) as Array<SigningRequest>;
+      const saved = savedRequestsSchema.parse(JSON.parse(readFileSync(filePath, "utf8")));
       for (const item of saved) {
-        super.create(item);
-        if (item.status !== "pending") super.decide(item.documentId, { status: item.status, ...(item.reason ? { reason: item.reason } : {}) });
-        if (item.deliveryStatus !== "not_attempted") super.recordDelivery(item.documentId, { delivered: item.deliveryStatus === "delivered", attempts: item.deliveryAttempts, ...(item.lastDeliveryError ? { error: item.lastDeliveryError } : {}) });
+        this.requests.set(item.documentId, item);
       }
-    } catch { this.persist(); }
+    } catch (error) {
+      if (error instanceof Error && "code" in error && error.code === "ENOENT") {
+        this.persist();
+      } else {
+        throw new Error(`No se pudieron cargar las solicitudes de Sistema B: ${filePath}. El archivo se conserva para su recuperación.`, { cause: error });
+      }
+    }
   }
-  private persist() { writeFileSync(this.filePath, JSON.stringify(this.findAll(), null, 2)); }
+  private persist() {
+    const temporaryPath = `${this.filePath}.${randomUUID()}.tmp`;
+    try {
+      writeFileSync(temporaryPath, JSON.stringify(this.findAll(), null, 2));
+      renameSync(temporaryPath, this.filePath);
+    } finally {
+      rmSync(temporaryPath, { force: true });
+    }
+  }
   override create(input: SubmitDocumentInput) { const value = super.create(input); if (value) this.persist(); return value; }
   override decide(id: string, input: DecideDocumentInput) { const value = super.decide(id, input); if (value) this.persist(); return value; }
   override recordDelivery(id: string, result: { delivered: boolean; attempts: number; error?: string }) { const value = super.recordDelivery(id, result); if (value) this.persist(); return value; }

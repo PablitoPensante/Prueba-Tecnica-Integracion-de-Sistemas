@@ -81,7 +81,8 @@ export class DrizzleDocumentRepository implements DocumentRepository {
         .select({ id: schema.documents.id, status: schema.documents.status })
         .from(schema.documents)
         .where(eq(schema.documents.id, payload.documentId))
-        .limit(1);
+        .limit(1)
+        .for("update");
 
       if (!document) return "not_found";
       if (document.status === payload.status) return "duplicate";
